@@ -24,4 +24,3 @@ export interface SavedReading {
   charms: Charm[]
   houses: House[]
 }
-

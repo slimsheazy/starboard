@@ -75,4 +75,3 @@ const FallbackIcon = BsQuestionCircle
 export function getCharmIcon(charmName: string): React.ComponentType<any> {
   return iconMap[charmName] || FallbackIcon
 }
-

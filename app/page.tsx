@@ -1,0 +1,272 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import StarBackground from "@/components/star-background"
+import AstrologyWheel from "@/components/astrology-wheel"
+import UserInputForm from "@/components/user-input-form"
+import CharmBoard from "@/components/charm-board"
+import CharmSelector from "@/components/charm-selector"
+import ReadingSynopsis from "@/components/reading-synopsis"
+import SavedReadings from "@/components/saved-readings"
+import useShakeDetection from "@/hooks/use-shake-detection"
+import type { Charm, House, SavedReading } from "@/lib/types"
+import { houses as defaultHouses } from "@/lib/houses"
+import { charms } from "@/lib/charms"
+import { getRandomCharms } from "@/lib/utils"
+import { getContextualHouses } from "@/lib/house-context"
+import { Save, BookOpen } from "lucide-react"
+
+export default function Home() {
+  const [question, setQuestion] = useState<string>("")
+  const [selectedCharms, setSelectedCharms] = useState<Charm[]>([])
+  const [userSelectedCharms, setUserSelectedCharms] = useState<Charm[]>([])
+  const [isReading, setIsReading] = useState(false)
+  const [isSelectingCharms, setIsSelectingCharms] = useState(false)
+  const [hasShaken, setHasShaken] = useState(false)
+  const [contextualHouses, setContextualHouses] = useState<House[]>(defaultHouses)
+  const [savedReadings, setSavedReadings] = useState<SavedReading[]>([])
+  const [showSavedReadings, setShowSavedReadings] = useState(false)
+
+  // Load saved readings from localStorage on initial render
+  useEffect(() => {
+    const savedReadingsData = localStorage.getItem("starboardSavedReadings")
+    if (savedReadingsData) {
+      try {
+        setSavedReadings(JSON.parse(savedReadingsData))
+      } catch (e) {
+        console.error("Error loading saved readings:", e)
+      }
+    }
+  }, [])
+
+  // Update contextual houses when question changes
+  useEffect(() => {
+    if (question) {
+      setContextualHouses(getContextualHouses(question))
+    } else {
+      setContextualHouses(defaultHouses)
+    }
+  }, [question])
+
+  // Handle shake detection
+  const onShake = () => {
+    if (!hasShaken && !isSelectingCharms) {
+      castCharms()
+      setHasShaken(true)
+    }
+  }
+
+  useShakeDetection(onShake, true)
+
+  const castCharms = () => {
+    // If user has selected charms, use those
+    if (userSelectedCharms.length > 0) {
+      setSelectedCharms(userSelectedCharms)
+    } else {
+      // Get current date for astrological calculations
+      const currentDate = new Date()
+
+      // Get lunar phase (simplified for demo)
+      const lunarDay = currentDate.getDate() % 30
+
+      // Select random charms based on inputs
+      const randomCharms = getRandomCharms(charms, 12, {
+        question,
+        lunarPhase: lunarDay,
+      })
+
+      setSelectedCharms(randomCharms)
+    }
+
+    setIsReading(true)
+    setIsSelectingCharms(false)
+  }
+
+  const resetReading = () => {
+    setSelectedCharms([])
+    setUserSelectedCharms([])
+    setIsReading(false)
+    setIsSelectingCharms(false)
+    setHasShaken(false)
+  }
+
+  const openCharmSelector = () => {
+    setIsSelectingCharms(true)
+  }
+
+  const handleSelectCharm = (charm: Charm) => {
+    if (userSelectedCharms.length < 12) {
+      setUserSelectedCharms([...userSelectedCharms, charm])
+    }
+  }
+
+  const handleRemoveCharm = (charm: Charm) => {
+    setUserSelectedCharms(userSelectedCharms.filter((c) => c.name !== charm.name))
+  }
+
+  const randomizeCharms = () => {
+    const randomCharms = getRandomCharms(charms, 12, { question, lunarPhase: new Date().getDate() % 30 })
+    setUserSelectedCharms(randomCharms)
+  }
+
+  // Save the current reading
+  const saveReading = () => {
+    const newReading: SavedReading = {
+      id: Date.now().toString(),
+      date: new Date().toISOString(),
+      question: question,
+      charms: selectedCharms,
+      houses: contextualHouses,
+    }
+
+    const updatedReadings = [...savedReadings, newReading]
+    setSavedReadings(updatedReadings)
+
+    // Save to localStorage
+    localStorage.setItem("starboardSavedReadings", JSON.stringify(updatedReadings))
+
+    // Show confirmation
+    alert("Reading saved successfully")
+  }
+
+  // Delete a saved reading
+  const deleteReading = (id: string) => {
+    const updatedReadings = savedReadings.filter((reading) => reading.id !== id)
+    setSavedReadings(updatedReadings)
+
+    // Update localStorage
+    localStorage.setItem("starboardSavedReadings", JSON.stringify(updatedReadings))
+  }
+
+  // Load a saved reading
+  const loadReading = (reading: SavedReading) => {
+    setQuestion(reading.question)
+    setSelectedCharms(reading.charms)
+    setContextualHouses(reading.houses)
+    setIsReading(true)
+    setShowSavedReadings(false)
+  }
+
+  // Toggle saved readings view
+  const toggleSavedReadings = () => {
+    setShowSavedReadings(!showSavedReadings)
+  }
+
+  return (
+    <main className="relative flex min-h-screen flex-col items-center justify-center bg-black text-white overflow-hidden">
+      <StarBackground />
+
+      <h1 className="text-2xl font-extralight tracking-widest mb-6 z-10">starboard</h1>
+
+      <AnimatePresence mode="wait">
+        {!isReading && !isSelectingCharms && !showSavedReadings ? (
+          <motion.div
+            key="input"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="z-10 w-full max-w-md px-4"
+          >
+            <UserInputForm question={question} setQuestion={setQuestion} onSubmit={castCharms} />
+
+            <div className="mt-8 text-center text-sm text-gray-400">
+              <p>Shake your device to cast the charms</p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4 mt-4">
+                <button
+                  onClick={openCharmSelector}
+                  className="px-6 py-2 border border-white/20 rounded-full text-sm hover:bg-white/5 transition-colors"
+                >
+                  select your charms
+                </button>
+                <button
+                  onClick={castCharms}
+                  className="px-6 py-2 border border-white/20 rounded-full text-sm hover:bg-white/5 transition-colors"
+                >
+                  or cast randomly
+                </button>
+              </div>
+
+              {savedReadings.length > 0 && (
+                <button
+                  onClick={toggleSavedReadings}
+                  className="mt-6 flex items-center justify-center gap-2 mx-auto text-white/60 hover:text-white/80 transition-colors"
+                >
+                  <BookOpen size={16} />
+                  <span>View saved readings ({savedReadings.length})</span>
+                </button>
+              )}
+            </div>
+          </motion.div>
+        ) : isSelectingCharms ? (
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/50">
+            <div className="w-full max-w-md">
+              <CharmSelector
+                allCharms={charms}
+                selectedCharms={userSelectedCharms}
+                onSelectCharm={handleSelectCharm}
+                onRemoveCharm={handleRemoveCharm}
+                onRandomize={randomizeCharms}
+                onConfirm={castCharms}
+              />
+
+              <button
+                onClick={() => setIsSelectingCharms(false)}
+                className="mt-4 px-6 py-2 border border-white/20 rounded-full text-sm hover:bg-white/5 transition-colors mx-auto block"
+              >
+                back
+              </button>
+            </div>
+          </div>
+        ) : showSavedReadings ? (
+          <SavedReadings
+            readings={savedReadings}
+            onClose={toggleSavedReadings}
+            onDelete={deleteReading}
+            onLoad={loadReading}
+          />
+        ) : (
+          <motion.div
+            key="reading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="z-10 w-full flex flex-col items-center"
+          >
+            <div className="relative w-full max-w-md aspect-square mx-auto">
+              <AstrologyWheel houses={contextualHouses} />
+              <CharmBoard charms={selectedCharms} houses={contextualHouses} />
+            </div>
+
+            <p className="text-xs text-white/50 mt-2 text-center">tap the charms for insight</p>
+
+            {question && (
+              <div className="mt-2 text-center max-w-md px-4">
+                <p className="text-sm text-white/70 italic">"{question}"</p>
+              </div>
+            )}
+
+            <ReadingSynopsis charms={selectedCharms} houses={contextualHouses} question={question} />
+
+            <div className="flex gap-4 mt-8">
+              <button
+                onClick={saveReading}
+                className="px-6 py-2 border border-white/30 rounded-full text-sm hover:bg-white/10 transition-colors tracking-wide flex items-center gap-2"
+              >
+                <Save size={16} />
+                save reading
+              </button>
+
+              <button
+                onClick={resetReading}
+                className="px-6 py-2 border border-white/30 rounded-full text-sm hover:bg-white/10 transition-colors tracking-wide"
+              >
+                new reading
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </main>
+  )
+}

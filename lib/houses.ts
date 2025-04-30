@@ -74,4 +74,3 @@ export const houses: House[] = [
     description: "Unconscious, secrets, spirituality, endings",
   },
 ]
-

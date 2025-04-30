@@ -39,4 +39,3 @@ export function getCharmColor(charmName: string) {
 
   return { colorClass, lightColor, darkColor, category }
 }
-

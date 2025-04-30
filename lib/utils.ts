@@ -106,4 +106,3 @@ export function getLunarPhase(): number {
   // 0 = new moon, 15 = full moon
   return date.getDate() % 30
 }
-

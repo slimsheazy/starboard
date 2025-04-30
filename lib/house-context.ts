@@ -592,4 +592,3 @@ export function getContextualHouses(question: string): House[] {
     contextKeyword: contextMap![house.number] || house.keyword,
   }))
 }
-

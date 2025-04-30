@@ -70,4 +70,3 @@ export default function useShakeDetection(onShake: () => void, enabled = true) {
     }
   }, [lastUpdate, lastX, lastY, lastZ, onShake, cooldown, enabled])
 }
-
