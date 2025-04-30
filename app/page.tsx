@@ -15,7 +15,8 @@ import { houses as defaultHouses } from "@/lib/houses"
 import { charms } from "@/lib/charms"
 import { getRandomCharms } from "@/lib/utils"
 import { getContextualHouses } from "@/lib/house-context"
-import { Save, BookOpen } from "lucide-react"
+import { Save, BookOpen, Download, Check } from "lucide-react"
+import { generateReadingPDF } from "@/lib/pdf-utils"
 
 export default function Home() {
   const [question, setQuestion] = useState<string>("")
@@ -27,6 +28,7 @@ export default function Home() {
   const [contextualHouses, setContextualHouses] = useState<House[]>(defaultHouses)
   const [savedReadings, setSavedReadings] = useState<SavedReading[]>([])
   const [showSavedReadings, setShowSavedReadings] = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null)
 
   // Load saved readings from localStorage on initial render
   useEffect(() => {
@@ -48,6 +50,16 @@ export default function Home() {
       setContextualHouses(defaultHouses)
     }
   }, [question])
+
+  // Reset save success message after 3 seconds
+  useEffect(() => {
+    if (saveSuccess !== null) {
+      const timer = setTimeout(() => {
+        setSaveSuccess(null)
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [saveSuccess])
 
   // Handle shake detection
   const onShake = () => {
@@ -126,8 +138,13 @@ export default function Home() {
     // Save to localStorage
     localStorage.setItem("starboardSavedReadings", JSON.stringify(updatedReadings))
 
-    // Show confirmation
-    alert("Reading saved successfully")
+    // Show success message
+    setSaveSuccess(true)
+  }
+
+  // Save the current reading as PDF
+  const saveReadingAsPDF = () => {
+    generateReadingPDF(question, selectedCharms, contextualHouses)
   }
 
   // Delete a saved reading
@@ -248,13 +265,31 @@ export default function Home() {
 
             <ReadingSynopsis charms={selectedCharms} houses={contextualHouses} question={question} />
 
-            <div className="flex gap-4 mt-8">
+            <div className="flex flex-wrap gap-4 mt-8 justify-center">
               <button
                 onClick={saveReading}
+                className="px-6 py-2 border border-white/30 rounded-full text-sm hover:bg-white/10 transition-colors tracking-wide flex items-center gap-2 relative"
+                disabled={saveSuccess === true}
+              >
+                {saveSuccess === true ? (
+                  <>
+                    <Check size={16} className="text-green-400" />
+                    saved
+                  </>
+                ) : (
+                  <>
+                    <Save size={16} />
+                    save reading
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={saveReadingAsPDF}
                 className="px-6 py-2 border border-white/30 rounded-full text-sm hover:bg-white/10 transition-colors tracking-wide flex items-center gap-2"
               >
-                <Save size={16} />
-                save reading
+                <Download size={16} />
+                save as PDF
               </button>
 
               <button
@@ -264,6 +299,16 @@ export default function Home() {
                 new reading
               </button>
             </div>
+
+            {savedReadings.length > 0 && (
+              <button
+                onClick={toggleSavedReadings}
+                className="mt-6 flex items-center justify-center gap-2 text-white/60 hover:text-white/80 transition-colors"
+              >
+                <BookOpen size={16} />
+                <span>View saved readings ({savedReadings.length})</span>
+              </button>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

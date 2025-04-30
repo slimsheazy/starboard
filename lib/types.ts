@@ -23,4 +23,5 @@ export interface SavedReading {
   question: string
   charms: Charm[]
   houses: House[]
+  synopsis?: string
 }

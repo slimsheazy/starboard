@@ -5,7 +5,8 @@ import { motion } from "framer-motion"
 import type { SavedReading } from "@/lib/types"
 import { getCharmIcon } from "@/lib/charm-icons"
 import { getCharmColor } from "@/lib/charm-colors"
-import { Trash2 } from "lucide-react"
+import { Trash2, Download, ExternalLink } from "lucide-react"
+import { generateReadingPDF } from "@/lib/pdf-utils"
 
 interface SavedReadingsProps {
   readings: SavedReading[]
@@ -25,6 +26,10 @@ export default function SavedReadings({ readings, onClose, onDelete, onLoad }: S
     }
   }
 
+  const handleSaveAsPDF = (reading: SavedReading) => {
+    generateReadingPDF(reading.question, reading.charms, reading.houses, new Date(reading.date))
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -38,7 +43,7 @@ export default function SavedReadings({ readings, onClose, onDelete, onLoad }: S
         {readings.length === 0 ? (
           <p className="text-center text-white/60 py-4">No saved readings yet</p>
         ) : (
-          <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 charm-list">
             {readings.map((reading) => (
               <div key={reading.id} className="border border-white/10 rounded-lg p-3 bg-black/30">
                 <div className="flex justify-between items-start mb-2">
@@ -52,6 +57,7 @@ export default function SavedReadings({ readings, onClose, onDelete, onLoad }: S
                   <button
                     onClick={() => onDelete(reading.id)}
                     className="text-white/40 hover:text-white/70 transition-colors p-1"
+                    aria-label="Delete reading"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -85,12 +91,22 @@ export default function SavedReadings({ readings, onClose, onDelete, onLoad }: S
 
                 {expandedReading === reading.id && (
                   <div className="mt-3 pt-3 border-t border-white/10">
-                    <button
-                      onClick={() => onLoad(reading)}
-                      className="w-full py-2 rounded-lg transition-colors bg-white/10 hover:bg-white/20 text-white text-xs"
-                    >
-                      Load this reading
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => onLoad(reading)}
+                        className="flex-1 py-2 rounded-lg transition-colors bg-white/10 hover:bg-white/20 text-white text-xs flex items-center justify-center gap-1"
+                      >
+                        <ExternalLink size={14} />
+                        Load Reading
+                      </button>
+                      <button
+                        onClick={() => handleSaveAsPDF(reading)}
+                        className="flex-1 py-2 rounded-lg transition-colors bg-white/10 hover:bg-white/20 text-white text-xs flex items-center justify-center gap-1"
+                      >
+                        <Download size={14} />
+                        Save as PDF
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
