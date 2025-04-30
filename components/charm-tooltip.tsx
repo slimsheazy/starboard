@@ -3,9 +3,8 @@
 import { useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 import type { Charm } from "@/lib/types"
-import { X } from "lucide-react"
 import { getCharmIcon } from "@/lib/charm-icons"
-import { getCharmColor } from "@/lib/charm-colors"
+import { CloseIcon } from "./cosmic-icons"
 
 interface CharmTooltipProps {
   charm: Charm
@@ -13,12 +12,41 @@ interface CharmTooltipProps {
   onClose: () => void
 }
 
+// Function to get a cosmic color based on charm name
+const getCosmicColor = (charmName: string): string => {
+  // Use the first character code to determine color
+  const charCode = charmName.charCodeAt(0)
+
+  // Assign colors based on character code modulo 4
+  if (charCode % 4 === 0) {
+    return "var(--color-deep-purple)"
+  } else if (charCode % 4 === 1) {
+    return "var(--color-neon-pink)"
+  } else if (charCode % 4 === 2) {
+    return "var(--color-acid-green)"
+  } else {
+    return "var(--color-cosmic-blue)"
+  }
+}
+
+// Function to get category based on charm name
+const getCategory = (charmName: string): string => {
+  const charCode = charmName.charCodeAt(0)
+
+  if (charCode % 5 === 0) return "Growth"
+  if (charCode % 5 === 1) return "Challenges"
+  if (charCode % 5 === 2) return "Opportunities"
+  if (charCode % 5 === 3) return "Transitions"
+  return "Insights"
+}
+
 export function CharmTooltip({ charm, position, onClose }: CharmTooltipProps) {
   const tooltipRef = useRef<HTMLDivElement>(null)
   const CharmIcon = getCharmIcon(charm.name)
 
-  // Get charm color based on its category
-  const { colorClass, lightColor, darkColor, category } = getCharmColor(charm.name)
+  // Get charm color and category
+  const cosmicColor = getCosmicColor(charm.name)
+  const category = getCategory(charm.name)
 
   // Determine if it's a rare charm
   const isRare = charm.rarity === "rare"
@@ -49,7 +77,7 @@ export function CharmTooltip({ charm, position, onClose }: CharmTooltipProps) {
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
-      className="fixed z-50 w-64 bg-black/90 border border-white/20 rounded-lg shadow-lg p-4"
+      className="fixed z-50 w-64 bg-black/90 border-2 border-white/20 rounded-lg shadow-lg p-4"
       style={{
         left: adjustedPosition.x,
         top: adjustedPosition.y,
@@ -57,35 +85,31 @@ export function CharmTooltip({ charm, position, onClose }: CharmTooltipProps) {
       }}
     >
       <button onClick={onClose} className="absolute top-2 right-2 text-white/60 hover:text-white">
-        <X size={16} />
+        <CloseIcon size={16} />
       </button>
 
       <div className="flex flex-col items-center">
         <div
-          className={`mb-2 p-2 rounded-full flex items-center justify-center ${isRare ? "charm-rare" : "charm-common"}`}
+          className={`mb-2 p-2 rounded-full flex items-center justify-center ${isRare ? "charm-rare-2d" : "charm-2d"}`}
           style={{
-            background: `radial-gradient(circle at 30% 30%, ${isRare ? "#fff8e1" : lightColor}, ${isRare ? "#ffd54f" : darkColor})`,
+            backgroundColor: cosmicColor,
             boxShadow: isRare
-              ? "0 0 10px rgba(255, 215, 0, 0.7), inset 0 0 4px rgba(255, 255, 255, 0.8)"
-              : `0 0 8px ${lightColor}80, inset 0 0 4px rgba(255, 255, 255, 0.8)`,
+              ? `0 0 15px var(--color-star-yellow), 0 0 5px var(--color-star-yellow)`
+              : `0 0 8px ${cosmicColor}`,
           }}
         >
-          <CharmIcon
-            className={`w-6 h-6 ${isRare ? "text-amber-800" : darkColor.includes("rgb") ? "text-gray-800" : colorClass.replace("from-", "text-").replace("-200", "-800")}`}
-          />
+          <CharmIcon className="w-6 h-6 text-white" />
 
-          {/* Sparkle effect for rare charms */}
+          {/* Glitch effect for rare charms */}
           {isRare && (
             <div className="absolute inset-0 overflow-hidden rounded-full">
-              <div className="absolute w-full h-full animate-pulse opacity-50 bg-gradient-to-br from-yellow-200 to-transparent"></div>
+              <div className="absolute w-full h-full animate-pulse opacity-50"></div>
             </div>
           )}
         </div>
         <h3 className="text-lg font-medium text-white mb-1">{charm.name}</h3>
         <div className="text-xs mb-1">
-          <span
-            className={`px-2 py-0.5 rounded-full ${colorClass.replace("from-", "bg-").replace("-200", "-500")} text-white`}
-          >
+          <span className="px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: cosmicColor }}>
             {category}
           </span>
         </div>

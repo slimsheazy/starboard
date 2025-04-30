@@ -1,23 +1,40 @@
 "use client"
 
 import type React from "react"
-
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import type { Charm, House } from "@/lib/types"
 import { CharmTooltip } from "./charm-tooltip"
 import { getCharmIcon } from "@/lib/charm-icons"
-import { getCharmColor } from "@/lib/charm-colors"
+import { triggerGlitch } from "./sound-effects"
 
 interface CharmBoardProps {
   charms: Charm[]
   houses: House[]
 }
 
+// Function to get a cosmic color based on charm name
+const getCosmicColor = (charmName: string): string => {
+  // Use the first character code to determine color
+  const charCode = charmName.charCodeAt(0)
+
+  // Assign colors based on character code modulo 4
+  if (charCode % 4 === 0) {
+    return "var(--color-deep-purple)"
+  } else if (charCode % 4 === 1) {
+    return "var(--color-neon-pink)"
+  } else if (charCode % 4 === 2) {
+    return "var(--color-acid-green)"
+  } else {
+    return "var(--color-cosmic-blue)"
+  }
+}
+
 export default function CharmBoard({ charms, houses }: CharmBoardProps) {
   const [positions, setPositions] = useState<{ x: number; y: number }[]>([])
   const [selectedCharm, setSelectedCharm] = useState<Charm | null>(null)
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
+  const [animationStates, setAnimationStates] = useState<string[]>([])
 
   useEffect(() => {
     if (charms.length === 0) return
@@ -45,6 +62,13 @@ export default function CharmBoard({ charms, houses }: CharmBoardProps) {
     })
 
     setPositions(newPositions)
+
+    // Set random animation states for each charm
+    const animations = ["animate-shimmer", "animate-flicker", ""]
+    const newAnimationStates = charms.map(() => {
+      return animations[Math.floor(Math.random() * animations.length)]
+    })
+    setAnimationStates(newAnimationStates)
   }, [charms, houses])
 
   const handleCharmClick = (charm: Charm, x: number, y: number, event: React.MouseEvent) => {
@@ -55,6 +79,9 @@ export default function CharmBoard({ charms, houses }: CharmBoardProps) {
 
     setSelectedCharm(charm)
     setTooltipPosition({ x: viewportX, y: viewportY })
+
+    // Trigger glitch sound effect
+    triggerGlitch()
   }
 
   const closeTooltip = () => {
@@ -71,8 +98,8 @@ export default function CharmBoard({ charms, houses }: CharmBoardProps) {
         // Get charm icon component
         const CharmIcon = getCharmIcon(charm.name)
 
-        // Get charm color based on its category
-        const { colorClass, lightColor, darkColor, category } = getCharmColor(charm.name)
+        // Get charm color based on cosmic palette
+        const cosmicColor = getCosmicColor(charm.name)
 
         // Determine if it's a rare charm
         const isRare = charm.rarity === "rare"
@@ -110,24 +137,22 @@ export default function CharmBoard({ charms, houses }: CharmBoardProps) {
             }}
             onClick={(e) => handleCharmClick(charm, positions[index].x, positions[index].y, e)}
           >
-            <div className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center">
+            <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
               <div
-                className={`w-7 h-7 md:w-9 md:h-9 rounded-full p-1 flex items-center justify-center shadow-lg transform transition-all duration-300 hover:scale-110 ${isRare ? "charm-rare" : "charm-common"}`}
+                className={`w-9 h-9 md:w-11 md:h-11 rounded-full flex items-center justify-center ${isRare ? "charm-rare-2d" : "charm-2d"} ${animationStates[index]}`}
                 style={{
-                  background: `radial-gradient(circle at 30% 30%, ${isRare ? "#fff8e1" : lightColor}, ${isRare ? "#ffd54f" : darkColor})`,
+                  backgroundColor: cosmicColor,
                   boxShadow: isRare
-                    ? "0 0 10px rgba(255, 215, 0, 0.7), inset 0 0 4px rgba(255, 255, 255, 0.8)"
-                    : `0 0 8px ${lightColor}80, inset 0 0 4px rgba(255, 255, 255, 0.8)`,
+                    ? `0 0 15px var(--color-star-yellow), 0 0 5px var(--color-star-yellow)`
+                    : `0 0 8px ${cosmicColor}`,
                 }}
               >
-                <CharmIcon
-                  className={`w-4 h-4 md:w-5 md:h-5 ${isRare ? "text-amber-800" : darkColor.includes("rgb") ? "text-gray-800" : colorClass.replace("from-", "text-").replace("-200", "-800")}`}
-                />
+                <CharmIcon className={`w-5 h-5 md:w-6 md:h-6 text-white`} />
 
-                {/* Sparkle effect for rare charms */}
+                {/* Glitch effect for rare charms */}
                 {isRare && (
                   <div className="absolute inset-0 overflow-hidden rounded-full">
-                    <div className="absolute w-full h-full animate-pulse opacity-50 bg-gradient-to-br from-yellow-200 to-transparent"></div>
+                    <div className="absolute w-full h-full animate-pulse opacity-50"></div>
                     <div className="absolute top-0 right-0 w-2 h-2 bg-white rounded-full animate-ping"></div>
                     <div
                       className="absolute bottom-1 left-1 w-1 h-1 bg-white rounded-full animate-ping"

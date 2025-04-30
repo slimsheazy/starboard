@@ -9,13 +9,15 @@ import CharmBoard from "@/components/charm-board"
 import CharmSelector from "@/components/charm-selector"
 import ReadingSynopsis from "@/components/reading-synopsis"
 import SavedReadings from "@/components/saved-readings"
+import BottomNav from "@/components/bottom-nav"
+import SoundEffects, { triggerFlintStrike, triggerGlitch, triggerWhisper } from "@/components/sound-effects"
 import useShakeDetection from "@/hooks/use-shake-detection"
 import type { Charm, House, SavedReading } from "@/lib/types"
 import { houses as defaultHouses } from "@/lib/houses"
 import { charms } from "@/lib/charms"
 import { getRandomCharms } from "@/lib/utils"
 import { getContextualHouses } from "@/lib/house-context"
-import { Save, BookOpen, Download, Check } from "lucide-react"
+import { SaveIcon, DownloadIcon, CheckIcon } from "./cosmic-icons"
 import { generateReadingPDF } from "@/lib/pdf-utils"
 
 export default function Home() {
@@ -72,6 +74,9 @@ export default function Home() {
   useShakeDetection(onShake, true)
 
   const castCharms = () => {
+    // Play sound effect
+    triggerGlitch()
+
     // If user has selected charms, use those
     if (userSelectedCharms.length > 0) {
       setSelectedCharms(userSelectedCharms)
@@ -96,6 +101,7 @@ export default function Home() {
   }
 
   const resetReading = () => {
+    triggerWhisper()
     setSelectedCharms([])
     setUserSelectedCharms([])
     setIsReading(false)
@@ -104,32 +110,39 @@ export default function Home() {
   }
 
   const openCharmSelector = () => {
+    triggerWhisper()
     setIsSelectingCharms(true)
   }
 
   const handleSelectCharm = (charm: Charm) => {
     if (userSelectedCharms.length < 12) {
+      triggerFlintStrike()
       setUserSelectedCharms([...userSelectedCharms, charm])
     }
   }
 
   const handleRemoveCharm = (charm: Charm) => {
+    triggerWhisper()
     setUserSelectedCharms(userSelectedCharms.filter((c) => c.name !== charm.name))
   }
 
   const randomizeCharms = () => {
+    triggerGlitch()
     const randomCharms = getRandomCharms(charms, 12, { question, lunarPhase: new Date().getDate() % 30 })
     setUserSelectedCharms(randomCharms)
   }
 
   // Save the current reading
   const saveReading = () => {
+    triggerFlintStrike()
+
     const newReading: SavedReading = {
       id: Date.now().toString(),
       date: new Date().toISOString(),
       question: question,
       charms: selectedCharms,
       houses: contextualHouses,
+      name: "",
     }
 
     const updatedReadings = [...savedReadings, newReading]
@@ -144,12 +157,24 @@ export default function Home() {
 
   // Save the current reading as PDF
   const saveReadingAsPDF = () => {
+    triggerFlintStrike()
     generateReadingPDF(question, selectedCharms, contextualHouses)
   }
 
   // Delete a saved reading
   const deleteReading = (id: string) => {
+    triggerWhisper()
     const updatedReadings = savedReadings.filter((reading) => reading.id !== id)
+    setSavedReadings(updatedReadings)
+
+    // Update localStorage
+    localStorage.setItem("starboardSavedReadings", JSON.stringify(updatedReadings))
+  }
+
+  // Rename a saved reading
+  const renameReading = (id: string, name: string) => {
+    triggerFlintStrike()
+    const updatedReadings = savedReadings.map((reading) => (reading.id === id ? { ...reading, name } : reading))
     setSavedReadings(updatedReadings)
 
     // Update localStorage
@@ -158,6 +183,7 @@ export default function Home() {
 
   // Load a saved reading
   const loadReading = (reading: SavedReading) => {
+    triggerGlitch()
     setQuestion(reading.question)
     setSelectedCharms(reading.charms)
     setContextualHouses(reading.houses)
@@ -167,12 +193,18 @@ export default function Home() {
 
   // Toggle saved readings view
   const toggleSavedReadings = () => {
+    triggerWhisper()
     setShowSavedReadings(!showSavedReadings)
   }
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center bg-black text-white overflow-hidden">
+    <main className="relative flex min-h-screen flex-col items-center justify-center bg-black text-white overflow-hidden pb-20">
       <StarBackground />
+
+      {/* Sound effects control */}
+      <div className="fixed top-4 right-4 z-30">
+        <SoundEffects />
+      </div>
 
       <h1 className="text-2xl font-extralight tracking-widest mb-6 z-10">starboard</h1>
 
@@ -187,32 +219,22 @@ export default function Home() {
           >
             <UserInputForm question={question} setQuestion={setQuestion} onSubmit={castCharms} />
 
-            <div className="mt-8 text-center text-sm text-gray-400">
+            <div className="mt-8 text-center text-sm text-white/70">
               <p>Shake your device to cast the charms</p>
               <div className="flex flex-col sm:flex-row justify-center gap-4 mt-4">
                 <button
                   onClick={openCharmSelector}
-                  className="px-6 py-2 border border-white/20 rounded-full text-sm hover:bg-white/5 transition-colors"
+                  className="px-6 py-2 border-2 border-white/20 rounded-full text-sm hover:bg-white/5 transition-colors sound-trigger"
                 >
                   select your charms
                 </button>
                 <button
                   onClick={castCharms}
-                  className="px-6 py-2 border border-white/20 rounded-full text-sm hover:bg-white/5 transition-colors"
+                  className="px-6 py-2 rounded-full text-sm transition-colors cosmic-glow bg-black/30 border-2 border-neon-pink sound-trigger"
                 >
                   or cast randomly
                 </button>
               </div>
-
-              {savedReadings.length > 0 && (
-                <button
-                  onClick={toggleSavedReadings}
-                  className="mt-6 flex items-center justify-center gap-2 mx-auto text-white/60 hover:text-white/80 transition-colors"
-                >
-                  <BookOpen size={16} />
-                  <span>View saved readings ({savedReadings.length})</span>
-                </button>
-              )}
             </div>
           </motion.div>
         ) : isSelectingCharms ? (
@@ -229,7 +251,7 @@ export default function Home() {
 
               <button
                 onClick={() => setIsSelectingCharms(false)}
-                className="mt-4 px-6 py-2 border border-white/20 rounded-full text-sm hover:bg-white/5 transition-colors mx-auto block"
+                className="mt-4 px-6 py-2 border-2 border-white/20 rounded-full text-sm hover:bg-white/5 transition-colors mx-auto block sound-trigger"
               >
                 back
               </button>
@@ -241,6 +263,7 @@ export default function Home() {
             onClose={toggleSavedReadings}
             onDelete={deleteReading}
             onLoad={loadReading}
+            onRename={renameReading}
           />
         ) : (
           <motion.div
@@ -268,17 +291,17 @@ export default function Home() {
             <div className="flex flex-wrap gap-4 mt-8 justify-center">
               <button
                 onClick={saveReading}
-                className="px-6 py-2 border border-white/30 rounded-full text-sm hover:bg-white/10 transition-colors tracking-wide flex items-center gap-2 relative"
+                className="px-6 py-2 border-2 border-white/30 rounded-full text-sm hover:bg-white/10 transition-colors tracking-wide flex items-center gap-2 relative sound-trigger"
                 disabled={saveSuccess === true}
               >
                 {saveSuccess === true ? (
                   <>
-                    <Check size={16} className="text-green-400" />
+                    <CheckIcon className="w-5 h-5 text-acid-green" />
                     saved
                   </>
                 ) : (
                   <>
-                    <Save size={16} />
+                    <SaveIcon className="w-5 h-5" />
                     save reading
                   </>
                 )}
@@ -286,32 +309,25 @@ export default function Home() {
 
               <button
                 onClick={saveReadingAsPDF}
-                className="px-6 py-2 border border-white/30 rounded-full text-sm hover:bg-white/10 transition-colors tracking-wide flex items-center gap-2"
+                className="px-6 py-2 border-2 border-white/30 rounded-full text-sm hover:bg-white/10 transition-colors tracking-wide flex items-center gap-2 sound-trigger"
               >
-                <Download size={16} />
+                <DownloadIcon className="w-5 h-5" />
                 save as PDF
               </button>
 
               <button
                 onClick={resetReading}
-                className="px-6 py-2 border border-white/30 rounded-full text-sm hover:bg-white/10 transition-colors tracking-wide"
+                className="px-6 py-2 border-2 border-white/30 rounded-full text-sm hover:bg-white/10 transition-colors tracking-wide sound-trigger"
               >
                 new reading
               </button>
             </div>
-
-            {savedReadings.length > 0 && (
-              <button
-                onClick={toggleSavedReadings}
-                className="mt-6 flex items-center justify-center gap-2 text-white/60 hover:text-white/80 transition-colors"
-              >
-                <BookOpen size={16} />
-                <span>View saved readings ({savedReadings.length})</span>
-              </button>
-            )}
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Bottom Navigation */}
+      <BottomNav onOpenSavedReadings={toggleSavedReadings} savedReadingsCount={savedReadings.length} />
     </main>
   )
 }
