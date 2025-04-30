@@ -10,14 +10,14 @@ import CharmSelector from "@/components/charm-selector"
 import ReadingSynopsis from "@/components/reading-synopsis"
 import SavedReadings from "@/components/saved-readings"
 import BottomNav from "@/components/bottom-nav"
-import SoundEffects, { triggerFlintStrike, triggerGlitch, triggerWhisper } from "@/components/sound-effects"
+import { triggerFlintStrike, triggerGlitch, triggerWhisper } from "@/components/sound-effects"
 import useShakeDetection from "@/hooks/use-shake-detection"
 import type { Charm, House, SavedReading } from "@/lib/types"
 import { houses as defaultHouses } from "@/lib/houses"
 import { charms } from "@/lib/charms"
 import { getRandomCharms } from "@/lib/utils"
 import { getContextualHouses } from "@/lib/house-context"
-import { SaveIcon, DownloadIcon, CheckIcon } from "./cosmic-icons"
+import { SaveIcon, DownloadIcon, CheckIcon } from "@/components/cosmic-icons"
 import { generateReadingPDF } from "@/lib/pdf-utils"
 
 export default function Home() {
@@ -200,11 +200,6 @@ export default function Home() {
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-black text-white overflow-hidden pb-20">
       <StarBackground />
-
-      {/* Sound effects control */}
-      <div className="fixed top-4 right-4 z-30">
-        <SoundEffects />
-      </div>
 
       <h1 className="text-2xl font-extralight tracking-widest mb-6 z-10">starboard</h1>
 

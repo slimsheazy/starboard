@@ -1,8 +1,8 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { usePathname } from "next/navigation"
+import Link from "next/link"
 import { motion } from "framer-motion"
 import { HomeIcon, BookIcon, StarIcon, MoonIcon } from "./cosmic-icons"
 import { triggerWhisper } from "./sound-effects"
@@ -13,15 +13,11 @@ interface BottomNavProps {
 }
 
 export default function BottomNav({ onOpenSavedReadings, savedReadingsCount }: BottomNavProps) {
-  const [activeTab, setActiveTab] = useState("home")
+  const pathname = usePathname()
 
-  const handleTabClick = (tab: string) => {
-    setActiveTab(tab)
+  const handleReadingsClick = () => {
     triggerWhisper()
-
-    if (tab === "readings") {
-      onOpenSavedReadings()
-    }
+    onOpenSavedReadings()
   }
 
   return (
@@ -34,31 +30,26 @@ export default function BottomNav({ onOpenSavedReadings, savedReadingsCount }: B
           className="bg-black/40 backdrop-blur-md border-2 border-white/10 rounded-2xl p-2 bottom-nav"
         >
           <div className="flex justify-around">
-            <NavButton
-              icon={<HomeIcon className="w-6 h-6" />}
-              label="Home"
-              isActive={activeTab === "home"}
-              onClick={() => handleTabClick("home")}
-            />
-            <NavButton
-              icon={<BookIcon className="w-6 h-6" />}
-              label="Readings"
-              isActive={activeTab === "readings"}
-              onClick={() => handleTabClick("readings")}
-              badge={savedReadingsCount > 0 ? savedReadingsCount : undefined}
-            />
-            <NavButton
-              icon={<StarIcon className="w-6 h-6" />}
-              label="Charms"
-              isActive={activeTab === "charms"}
-              onClick={() => handleTabClick("charms")}
-            />
-            <NavButton
-              icon={<MoonIcon className="w-6 h-6" />}
-              label="About"
-              isActive={activeTab === "about"}
-              onClick={() => handleTabClick("about")}
-            />
+            <Link href="/" onClick={() => triggerWhisper()}>
+              <NavButton icon={<HomeIcon className="w-6 h-6" />} label="Home" isActive={pathname === "/"} />
+            </Link>
+
+            <button onClick={handleReadingsClick}>
+              <NavButton
+                icon={<BookIcon className="w-6 h-6" />}
+                label="Readings"
+                isActive={false}
+                badge={savedReadingsCount > 0 ? savedReadingsCount : undefined}
+              />
+            </button>
+
+            <Link href="/charms" onClick={() => triggerWhisper()}>
+              <NavButton icon={<StarIcon className="w-6 h-6" />} label="Charms" isActive={pathname === "/charms"} />
+            </Link>
+
+            <Link href="/about" onClick={() => triggerWhisper()}>
+              <NavButton icon={<MoonIcon className="w-6 h-6" />} label="About" isActive={pathname === "/about"} />
+            </Link>
           </div>
         </motion.div>
       </div>
@@ -70,13 +61,13 @@ interface NavButtonProps {
   icon: React.ReactNode
   label: string
   isActive: boolean
-  onClick: () => void
+  onClick?: () => void
   badge?: number
 }
 
 function NavButton({ icon, label, isActive, onClick, badge }: NavButtonProps) {
   return (
-    <button
+    <div
       className={`flex flex-col items-center justify-center p-2 rounded-xl transition-colors relative ${
         isActive ? "text-white" : "text-white/50"
       }`}
@@ -90,6 +81,6 @@ function NavButton({ icon, label, isActive, onClick, badge }: NavButtonProps) {
           {badge}
         </div>
       )}
-    </button>
+    </div>
   )
 }
