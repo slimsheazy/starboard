@@ -6,10 +6,11 @@ import StarBackground from "@/components/star-background"
 import AstrologyWheel from "@/components/astrology-wheel"
 import UserInputForm from "@/components/user-input-form"
 import CharmBoard from "@/components/charm-board"
-import CharmSelector from "@/components/charm-selector"
 import ReadingSynopsis from "@/components/reading-synopsis"
 import SavedReadings from "@/components/saved-readings"
 import BottomNav from "@/components/bottom-nav"
+import SoundTest from "@/components/sound-test"
+import AIQuestionHelper from "@/components/ai-question-helper"
 import { triggerFlintStrike, triggerGlitch, triggerWhisper } from "@/components/sound-effects"
 import useShakeDetection from "@/hooks/use-shake-detection"
 import type { Charm, House, SavedReading } from "@/lib/types"
@@ -23,14 +24,13 @@ import { generateReadingPDF } from "@/lib/pdf-utils"
 export default function Home() {
   const [question, setQuestion] = useState<string>("")
   const [selectedCharms, setSelectedCharms] = useState<Charm[]>([])
-  const [userSelectedCharms, setUserSelectedCharms] = useState<Charm[]>([])
   const [isReading, setIsReading] = useState(false)
-  const [isSelectingCharms, setIsSelectingCharms] = useState(false)
   const [hasShaken, setHasShaken] = useState(false)
   const [contextualHouses, setContextualHouses] = useState<House[]>(defaultHouses)
   const [savedReadings, setSavedReadings] = useState<SavedReading[]>([])
   const [showSavedReadings, setShowSavedReadings] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null)
+  const [showAIHelper, setShowAIHelper] = useState(false)
 
   // Load saved readings from localStorage on initial render
   useEffect(() => {
@@ -65,7 +65,7 @@ export default function Home() {
 
   // Handle shake detection
   const onShake = () => {
-    if (!hasShaken && !isSelectingCharms) {
+    if (!hasShaken && !showAIHelper) {
       castCharms()
       setHasShaken(true)
     }
@@ -74,62 +74,44 @@ export default function Home() {
   useShakeDetection(onShake, true)
 
   const castCharms = () => {
+    // If question is entered but not refined, show AI helper
+    if (question.trim() && !isReading && !showAIHelper) {
+      setShowAIHelper(true)
+      return
+    }
+
     // Play sound effect
     triggerGlitch()
 
-    // If user has selected charms, use those
-    if (userSelectedCharms.length > 0) {
-      setSelectedCharms(userSelectedCharms)
-    } else {
-      // Get current date for astrological calculations
-      const currentDate = new Date()
+    // Get current date for astrological calculations
+    const currentDate = new Date()
 
-      // Get lunar phase (simplified for demo)
-      const lunarDay = currentDate.getDate() % 30
+    // Get lunar phase (simplified for demo)
+    const lunarDay = currentDate.getDate() % 30
 
-      // Select random charms based on inputs
-      const randomCharms = getRandomCharms(charms, 12, {
-        question,
-        lunarPhase: lunarDay,
-      })
+    // Select random charms based on inputs
+    const randomCharms = getRandomCharms(charms, 12, {
+      question,
+      lunarPhase: lunarDay,
+    })
 
-      setSelectedCharms(randomCharms)
-    }
-
+    setSelectedCharms(randomCharms)
     setIsReading(true)
-    setIsSelectingCharms(false)
   }
 
   const resetReading = () => {
     triggerWhisper()
     setSelectedCharms([])
-    setUserSelectedCharms([])
     setIsReading(false)
-    setIsSelectingCharms(false)
     setHasShaken(false)
   }
 
-  const openCharmSelector = () => {
-    triggerWhisper()
-    setIsSelectingCharms(true)
-  }
-
-  const handleSelectCharm = (charm: Charm) => {
-    if (userSelectedCharms.length < 12) {
-      triggerFlintStrike()
-      setUserSelectedCharms([...userSelectedCharms, charm])
-    }
-  }
-
-  const handleRemoveCharm = (charm: Charm) => {
-    triggerWhisper()
-    setUserSelectedCharms(userSelectedCharms.filter((c) => c.name !== charm.name))
-  }
-
-  const randomizeCharms = () => {
-    triggerGlitch()
-    const randomCharms = getRandomCharms(charms, 12, { question, lunarPhase: new Date().getDate() % 30 })
-    setUserSelectedCharms(randomCharms)
+  // Handle refined question from AI helper
+  const handleRefinedQuestion = (refinedQuestion: string) => {
+    setQuestion(refinedQuestion)
+    setShowAIHelper(false)
+    // Cast charms with the refined question
+    castCharms()
   }
 
   // Save the current reading
@@ -200,11 +182,12 @@ export default function Home() {
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-black text-white overflow-hidden pb-20">
       <StarBackground />
+      <SoundTest />
 
       <h1 className="text-2xl font-extralight tracking-widest mb-6 z-10">starboard</h1>
 
       <AnimatePresence mode="wait">
-        {!isReading && !isSelectingCharms && !showSavedReadings ? (
+        {!isReading && !showSavedReadings ? (
           <motion.div
             key="input"
             initial={{ opacity: 0 }}
@@ -216,42 +199,16 @@ export default function Home() {
 
             <div className="mt-8 text-center text-sm text-white/70">
               <p>Shake your device to cast the charms</p>
-              <div className="flex flex-col sm:flex-row justify-center gap-4 mt-4">
-                <button
-                  onClick={openCharmSelector}
-                  className="px-6 py-2 border-2 border-white/20 rounded-full text-sm hover:bg-white/5 transition-colors sound-trigger"
-                >
-                  select your charms
-                </button>
+              <div className="flex justify-center mt-4">
                 <button
                   onClick={castCharms}
                   className="px-6 py-2 rounded-full text-sm transition-colors cosmic-glow bg-black/30 border-2 border-neon-pink sound-trigger"
                 >
-                  or cast randomly
+                  cast charms
                 </button>
               </div>
             </div>
           </motion.div>
-        ) : isSelectingCharms ? (
-          <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/50">
-            <div className="w-full max-w-md">
-              <CharmSelector
-                allCharms={charms}
-                selectedCharms={userSelectedCharms}
-                onSelectCharm={handleSelectCharm}
-                onRemoveCharm={handleRemoveCharm}
-                onRandomize={randomizeCharms}
-                onConfirm={castCharms}
-              />
-
-              <button
-                onClick={() => setIsSelectingCharms(false)}
-                className="mt-4 px-6 py-2 border-2 border-white/20 rounded-full text-sm hover:bg-white/5 transition-colors mx-auto block sound-trigger"
-              >
-                back
-              </button>
-            </div>
-          </div>
         ) : showSavedReadings ? (
           <SavedReadings
             readings={savedReadings}
@@ -318,6 +275,20 @@ export default function Home() {
               </button>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* AI Question Helper */}
+      <AnimatePresence>
+        {showAIHelper && (
+          <AIQuestionHelper
+            initialQuestion={question}
+            onQuestionRefined={handleRefinedQuestion}
+            onClose={() => {
+              setShowAIHelper(false)
+              castCharms()
+            }}
+          />
         )}
       </AnimatePresence>
 

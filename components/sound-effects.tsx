@@ -8,21 +8,45 @@ interface SoundEffectsProps {
 }
 
 export default function SoundEffects({ className }: SoundEffectsProps) {
-  const [isMuted, setIsMuted] = useState(true)
+  const [isMuted, setIsMuted] = useState(false)
   const flintStrikeRef = useRef<HTMLAudioElement | null>(null)
   const whisperRef = useRef<HTMLAudioElement | null>(null)
   const glitchRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
-    // Initialize audio elements
-    flintStrikeRef.current = new Audio("/sounds/flint-strike.mp3")
-    whisperRef.current = new Audio("/sounds/whisper.mp3")
-    glitchRef.current = new Audio("/sounds/glitch.mp3")
+    // Function to safely create audio elements with fallback
+    const createAudioWithFallback = (src: string) => {
+      const audio = new Audio()
+      audio.volume = 0.7
+
+      // Try to load the audio file, but don't break if it fails
+      try {
+        audio.src = src
+        // Add error handling for the audio element
+        audio.addEventListener("error", (e) => {
+          console.warn(`Could not load audio file: ${src}`, e)
+        })
+      } catch (e) {
+        console.warn(`Error setting up audio: ${src}`, e)
+      }
+
+      return audio
+    }
+
+    // Create audio elements with proper error handling
+    flintStrikeRef.current = createAudioWithFallback("/sounds/flint-strike.mp3")
+    whisperRef.current = createAudioWithFallback("/sounds/whisper.mp3")
+    glitchRef.current = createAudioWithFallback("/sounds/glitch.mp3")
 
     // Set up event listeners for custom events
     document.addEventListener("play-flint-strike", playFlintStrike)
     document.addEventListener("play-whisper", playWhisper)
     document.addEventListener("play-glitch", playGlitch)
+
+    // Log a warning if sounds directory might be missing
+    console.info(
+      "Sound effects initialized. If you're not hearing sounds, make sure audio files exist in the /public/sounds/ directory.",
+    )
 
     return () => {
       // Clean up event listeners
@@ -32,25 +56,55 @@ export default function SoundEffects({ className }: SoundEffectsProps) {
     }
   }, [])
 
-  // Sound effect functions
+  // Sound effect functions with better error handling
   const playFlintStrike = () => {
-    if (!isMuted && flintStrikeRef.current) {
+    if (isMuted || !flintStrikeRef.current) return
+
+    try {
       flintStrikeRef.current.currentTime = 0
-      flintStrikeRef.current.play().catch((e) => console.log("Audio play error:", e))
+      const playPromise = flintStrikeRef.current.play()
+
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          console.warn("Could not play flint strike sound:", error)
+        })
+      }
+    } catch (e) {
+      console.warn("Error playing flint strike sound:", e)
     }
   }
 
   const playWhisper = () => {
-    if (!isMuted && whisperRef.current) {
+    if (isMuted || !whisperRef.current) return
+
+    try {
       whisperRef.current.currentTime = 0
-      whisperRef.current.play().catch((e) => console.log("Audio play error:", e))
+      const playPromise = whisperRef.current.play()
+
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          console.warn("Could not play whisper sound:", error)
+        })
+      }
+    } catch (e) {
+      console.warn("Error playing whisper sound:", e)
     }
   }
 
   const playGlitch = () => {
-    if (!isMuted && glitchRef.current) {
+    if (isMuted || !glitchRef.current) return
+
+    try {
       glitchRef.current.currentTime = 0
-      glitchRef.current.play().catch((e) => console.log("Audio play error:", e))
+      const playPromise = glitchRef.current.play()
+
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          console.warn("Could not play glitch sound:", error)
+        })
+      }
+    } catch (e) {
+      console.warn("Error playing glitch sound:", e)
     }
   }
 
@@ -62,8 +116,9 @@ export default function SoundEffects({ className }: SoundEffectsProps) {
     <div className={`${className || ""}`}>
       <button
         onClick={toggleMute}
-        className="p-2 rounded-full bg-black/30 border-2 border-white/20 hover:border-white/40 transition-colors"
+        className={`p-2 rounded-full ${isMuted ? "bg-black/30 border-2 border-white/20" : "bg-neon-pink/30 border-2 border-neon-pink"} hover:border-white/40 transition-colors`}
         aria-label={isMuted ? "Unmute sounds" : "Mute sounds"}
+        title={isMuted ? "Unmute sounds (requires audio files in /public/sounds/)" : "Mute sounds"}
       >
         {isMuted ? <MuteIcon className="w-5 h-5 text-white/70" /> : <SoundIcon className="w-5 h-5 text-white" />}
       </button>

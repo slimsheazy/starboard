@@ -101,6 +101,34 @@ const questionKeywords: Record<string, Record<number, string>> = {
     11: "Team Dynamics",
     12: "Blind Spots",
   },
+  profession: {
+    1: "Professional Identity",
+    2: "Compensation",
+    3: "Expertise",
+    4: "Stability",
+    5: "Specialization",
+    6: "Daily Practice",
+    7: "Clients/Colleagues",
+    8: "Industry Changes",
+    9: "Development",
+    10: "Recognition",
+    11: "Professional Community",
+    12: "Hidden Potential",
+  },
+  employment: {
+    1: "Work Identity",
+    2: "Salary",
+    3: "Qualifications",
+    4: "Job Security",
+    5: "Job Satisfaction",
+    6: "Responsibilities",
+    7: "Employer",
+    8: "Benefits",
+    9: "Training",
+    10: "Career Path",
+    11: "Workplace Culture",
+    12: "Hidden Opportunities",
+  },
 
   // ======== RELATIONSHIP RELATED KEYWORDS ========
   // These keywords trigger relationship-focused house interpretations
@@ -188,6 +216,34 @@ const questionKeywords: Record<string, Record<number, string>> = {
     11: "Support System",
     12: "Closure",
   },
+  romance: {
+    1: "Romantic Self",
+    2: "Romantic Values",
+    3: "Flirtation",
+    4: "Emotional Safety",
+    5: "Passion",
+    6: "Dating Habits",
+    7: "Romantic Partner",
+    8: "Romantic Depth",
+    9: "Romantic Ideals",
+    10: "Relationship Goals",
+    11: "Dating Pool",
+    12: "Romantic Fantasies",
+  },
+  ex: {
+    1: "Post-Relationship Identity",
+    2: "Shared Possessions",
+    3: "Communication Boundaries",
+    4: "Emotional Separation",
+    5: "New Attractions",
+    6: "Daily Adjustments",
+    7: "Relationship Patterns",
+    8: "Emotional Baggage",
+    9: "Lessons Learned",
+    10: "Moving Forward",
+    11: "Mutual Friends",
+    12: "Unresolved Feelings",
+  },
 
   // ======== HEALTH RELATED KEYWORDS ========
   // These keywords trigger health-focused house interpretations
@@ -260,6 +316,34 @@ const questionKeywords: Record<string, Record<number, string>> = {
     10: "Discipline",
     11: "Support",
     12: "Cravings",
+  },
+  medical: {
+    1: "Physical Condition",
+    2: "Medical Costs",
+    3: "Diagnosis",
+    4: "Emotional Response",
+    5: "Recovery",
+    6: "Treatment Plan",
+    7: "Medical Professionals",
+    8: "Healing Process",
+    9: "Medical Knowledge",
+    10: "Long-term Management",
+    11: "Medical Support",
+    12: "Unknown Factors",
+  },
+  mental: {
+    1: "Self-Perception",
+    2: "Mental Resources",
+    3: "Thought Patterns",
+    4: "Emotional Roots",
+    5: "Self-Expression",
+    6: "Daily Mental Habits",
+    7: "Therapeutic Relationships",
+    8: "Psychological Transformation",
+    9: "Mental Framework",
+    10: "Mental Discipline",
+    11: "Support Groups",
+    12: "Subconscious Mind",
   },
 
   // ======== FINANCIAL RELATED KEYWORDS ========
@@ -334,6 +418,34 @@ const questionKeywords: Record<string, Record<number, string>> = {
     11: "Influences",
     12: "Unexpected Expenses",
   },
+  wealth: {
+    1: "Wealthy Identity",
+    2: "Net Worth",
+    3: "Financial Knowledge",
+    4: "Financial Security",
+    5: "Wealth Growth",
+    6: "Wealth Management",
+    7: "Financial Partnerships",
+    8: "Investments",
+    9: "Wealth Philosophy",
+    10: "Financial Legacy",
+    11: "Wealthy Network",
+    12: "Hidden Opportunities",
+  },
+  income: {
+    1: "Earning Potential",
+    2: "Income Streams",
+    3: "Income Skills",
+    4: "Income Stability",
+    5: "Side Hustles",
+    6: "Income Work",
+    7: "Income Partnerships",
+    8: "Passive Income",
+    9: "Income Growth",
+    10: "Career Income",
+    11: "Income Connections",
+    12: "Untapped Income",
+  },
 
   // ======== PERSONAL GROWTH RELATED KEYWORDS ========
   // These keywords trigger personal development-focused house interpretations
@@ -407,6 +519,34 @@ const questionKeywords: Record<string, Record<number, string>> = {
     11: "Community",
     12: "Letting Go",
   },
+  meaning: {
+    1: "Authentic Self",
+    2: "Personal Values",
+    3: "Meaningful Ideas",
+    4: "Emotional Meaning",
+    5: "Creative Purpose",
+    6: "Meaningful Work",
+    7: "Meaningful Connections",
+    8: "Depth",
+    9: "Life Philosophy",
+    10: "Life's Work",
+    11: "Community Purpose",
+    12: "Spiritual Meaning",
+  },
+  potential: {
+    1: "Self-Potential",
+    2: "Resource Potential",
+    3: "Mental Potential",
+    4: "Emotional Potential",
+    5: "Creative Potential",
+    6: "Skill Potential",
+    7: "Relationship Potential",
+    8: "Transformative Potential",
+    9: "Growth Potential",
+    10: "Achievement Potential",
+    11: "Social Potential",
+    12: "Hidden Potential",
+  },
 
   // ======== TRAVEL RELATED KEYWORDS ========
   // These keywords trigger travel-focused house interpretations
@@ -466,6 +606,34 @@ const questionKeywords: Record<string, Record<number, string>> = {
     11: "Group Activities",
     12: "Retreat",
   },
+  abroad: {
+    1: "Foreign Identity",
+    2: "Foreign Currency",
+    3: "Language",
+    4: "Foreign Home",
+    5: "Cultural Experiences",
+    6: "Daily Life Abroad",
+    7: "Foreign Connections",
+    8: "Cultural Adaptation",
+    9: "Foreign Perspective",
+    10: "International Career",
+    11: "International Community",
+    12: "Cultural Immersion",
+  },
+  relocation: {
+    1: "New Identity",
+    2: "Moving Costs",
+    3: "New Area Research",
+    4: "New Home",
+    5: "New Lifestyle",
+    6: "Relocation Tasks",
+    7: "New Relationships",
+    8: "Life Transformation",
+    9: "Distance",
+    10: "Career Impact",
+    11: "New Community",
+    12: "Leaving Behind",
+  },
 
   // ======== DECISION RELATED KEYWORDS ========
   // These keywords trigger decision-focused house interpretations
@@ -511,6 +679,324 @@ const questionKeywords: Record<string, Record<number, string>> = {
     11: "Social Factors",
     12: "Inner Wisdom",
   },
+  options: {
+    1: "Personal Preferences",
+    2: "Resource Requirements",
+    3: "Information Gathering",
+    4: "Emotional Comfort",
+    5: "Creative Alternatives",
+    6: "Practical Considerations",
+    7: "Consultation",
+    8: "Risk Assessment",
+    9: "Long-term Implications",
+    10: "Goal Alignment",
+    11: "Social Considerations",
+    12: "Intuitive Guidance",
+  },
+  path: {
+    1: "Life Direction",
+    2: "Path Resources",
+    3: "Path Knowledge",
+    4: "Path Foundation",
+    5: "Path Creativity",
+    6: "Path Work",
+    7: "Path Companions",
+    8: "Path Transformation",
+    9: "Path Philosophy",
+    10: "Path Destination",
+    11: "Path Community",
+    12: "Path Mystery",
+  },
+
+  // ======== CREATIVITY & EXPRESSION KEYWORDS ========
+  creative: {
+    1: "Creative Identity",
+    2: "Creative Resources",
+    3: "Creative Ideas",
+    4: "Creative Roots",
+    5: "Creative Expression",
+    6: "Creative Practice",
+    7: "Creative Collaboration",
+    8: "Creative Transformation",
+    9: "Creative Vision",
+    10: "Creative Career",
+    11: "Creative Community",
+    12: "Creative Inspiration",
+  },
+  art: {
+    1: "Artistic Self",
+    2: "Artistic Materials",
+    3: "Artistic Concepts",
+    4: "Artistic Heritage",
+    5: "Artistic Creation",
+    6: "Artistic Discipline",
+    7: "Artistic Audience",
+    8: "Artistic Depth",
+    9: "Artistic Philosophy",
+    10: "Artistic Recognition",
+    11: "Artistic Movement",
+    12: "Artistic Muse",
+  },
+  express: {
+    1: "Self-Expression",
+    2: "Expressive Tools",
+    3: "Expressive Communication",
+    4: "Emotional Expression",
+    5: "Creative Outlet",
+    6: "Expression Habits",
+    7: "Expression Reception",
+    8: "Authentic Expression",
+    9: "Expression Philosophy",
+    10: "Public Expression",
+    11: "Collective Expression",
+    12: "Subconscious Expression",
+  },
+  passion: {
+    1: "Passionate Self",
+    2: "Passion Investment",
+    3: "Passion Learning",
+    4: "Passion Roots",
+    5: "Passion Projects",
+    6: "Passion Practice",
+    7: "Passion Sharing",
+    8: "Passion Depth",
+    9: "Passion Purpose",
+    10: "Passion Achievement",
+    11: "Passion Community",
+    12: "Passion Source",
+  },
+
+  // ======== TECHNOLOGY & DIGITAL KEYWORDS ========
+  technology: {
+    1: "Tech Identity",
+    2: "Tech Resources",
+    3: "Tech Knowledge",
+    4: "Tech Foundation",
+    5: "Tech Innovation",
+    6: "Tech Skills",
+    7: "Tech Collaboration",
+    8: "Tech Transformation",
+    9: "Tech Vision",
+    10: "Tech Career",
+    11: "Tech Community",
+    12: "Tech Potential",
+  },
+  digital: {
+    1: "Digital Presence",
+    2: "Digital Assets",
+    3: "Digital Skills",
+    4: "Digital Security",
+    5: "Digital Creation",
+    6: "Digital Habits",
+    7: "Digital Connections",
+    8: "Digital Transformation",
+    9: "Digital Expansion",
+    10: "Digital Reputation",
+    11: "Digital Network",
+    12: "Digital Privacy",
+  },
+  online: {
+    1: "Online Identity",
+    2: "Online Resources",
+    3: "Online Communication",
+    4: "Online Security",
+    5: "Online Content",
+    6: "Online Routine",
+    7: "Online Relationships",
+    8: "Online Vulnerability",
+    9: "Online Learning",
+    10: "Online Presence",
+    11: "Online Community",
+    12: "Online Boundaries",
+  },
+
+  // ======== FAMILY & HOME KEYWORDS ========
+  family: {
+    1: "Family Role",
+    2: "Family Resources",
+    3: "Family Communication",
+    4: "Family Home",
+    5: "Family Joy",
+    6: "Family Responsibilities",
+    7: "Family Relationships",
+    8: "Family Dynamics",
+    9: "Family Values",
+    10: "Family Legacy",
+    11: "Extended Family",
+    12: "Family Patterns",
+  },
+  home: {
+    1: "Personal Space",
+    2: "Home Resources",
+    3: "Home Environment",
+    4: "Home Foundation",
+    5: "Home Aesthetics",
+    6: "Home Maintenance",
+    7: "Home Sharing",
+    8: "Home Transformation",
+    9: "Home Expansion",
+    10: "Home Status",
+    11: "Neighborhood",
+    12: "Home Sanctuary",
+  },
+  parent: {
+    1: "Parental Identity",
+    2: "Parental Resources",
+    3: "Parental Communication",
+    4: "Parental Nurturing",
+    5: "Parental Joy",
+    6: "Parental Duties",
+    7: "Parent-Child Relationship",
+    8: "Parental Transformation",
+    9: "Parental Philosophy",
+    10: "Parental Authority",
+    11: "Parenting Community",
+    12: "Parental Intuition",
+  },
+  child: {
+    1: "Child's Identity",
+    2: "Child's Resources",
+    3: "Child's Education",
+    4: "Child's Security",
+    5: "Child's Creativity",
+    6: "Child's Routine",
+    7: "Child's Relationships",
+    8: "Child's Development",
+    9: "Child's Learning",
+    10: "Child's Future",
+    11: "Child's Social Circle",
+    12: "Child's Inner World",
+  },
+  house: {
+    1: "House Style",
+    2: "House Value",
+    3: "House Location",
+    4: "House Foundation",
+    5: "House Design",
+    6: "House Maintenance",
+    7: "House Sharing",
+    8: "House Renovation",
+    9: "House Expansion",
+    10: "House Status",
+    11: "House Community",
+    12: "House Energy",
+  },
+
+  // ======== EDUCATION & LEARNING KEYWORDS ========
+  education: {
+    1: "Student Identity",
+    2: "Educational Resources",
+    3: "Learning Process",
+    4: "Educational Foundation",
+    5: "Creative Learning",
+    6: "Study Habits",
+    7: "Teachers/Mentors",
+    8: "Educational Transformation",
+    9: "Higher Education",
+    10: "Educational Goals",
+    11: "Study Groups",
+    12: "Self-Directed Learning",
+  },
+  school: {
+    1: "Academic Identity",
+    2: "School Supplies",
+    3: "School Subjects",
+    4: "Academic Foundation",
+    5: "School Activities",
+    6: "Homework/Routine",
+    7: "Classmates/Teachers",
+    8: "Academic Challenges",
+    9: "Educational Philosophy",
+    10: "Academic Achievement",
+    11: "School Community",
+    12: "Academic Potential",
+  },
+  college: {
+    1: "College Identity",
+    2: "College Finances",
+    3: "Major/Studies",
+    4: "College Adjustment",
+    5: "College Activities",
+    6: "College Routine",
+    7: "College Relationships",
+    8: "College Transformation",
+    9: "Academic Growth",
+    10: "Degree/Career Path",
+    11: "Campus Community",
+    12: "College Experience",
+  },
+  knowledge: {
+    1: "Knowledge Seeker",
+    2: "Knowledge Resources",
+    3: "Information Gathering",
+    4: "Knowledge Foundation",
+    5: "Knowledge Application",
+    6: "Knowledge Practice",
+    7: "Knowledge Sharing",
+    8: "Knowledge Depth",
+    9: "Knowledge Expansion",
+    10: "Knowledge Mastery",
+    11: "Knowledge Network",
+    12: "Hidden Knowledge",
+  },
+
+  // ======== TIMING & FUTURE KEYWORDS ========
+  future: {
+    1: "Future Self",
+    2: "Future Resources",
+    3: "Future Plans",
+    4: "Future Foundation",
+    5: "Future Possibilities",
+    6: "Future Habits",
+    7: "Future Relationships",
+    8: "Future Transformation",
+    9: "Future Vision",
+    10: "Future Achievement",
+    11: "Future Community",
+    12: "Future Unknown",
+  },
+  when: {
+    1: "Personal Timing",
+    2: "Resource Timing",
+    3: "Information Timing",
+    4: "Emotional Timing",
+    5: "Creative Timing",
+    6: "Practical Timing",
+    7: "Relationship Timing",
+    8: "Transformation Timing",
+    9: "Expansion Timing",
+    10: "Achievement Timing",
+    11: "Social Timing",
+    12: "Divine Timing",
+  },
+  time: {
+    1: "Personal Timeline",
+    2: "Time Investment",
+    3: "Time Management",
+    4: "Past Influence",
+    5: "Time for Creativity",
+    6: "Daily Schedule",
+    7: "Time with Others",
+    8: "Transformative Period",
+    9: "Future Timeline",
+    10: "Long-term Goals",
+    11: "Collective Timing",
+    12: "Timeless Aspects",
+  },
+  soon: {
+    1: "Immediate Changes",
+    2: "Immediate Resources",
+    3: "Immediate Information",
+    4: "Immediate Feelings",
+    5: "Immediate Opportunities",
+    6: "Immediate Tasks",
+    7: "Immediate Connections",
+    8: "Immediate Shifts",
+    9: "Near Future",
+    10: "Immediate Direction",
+    11: "Immediate Circle",
+    12: "Immediate Intuition",
+  },
 }
 
 /**
@@ -540,7 +1026,10 @@ export function getContextualHouses(question: string): House[] {
       lowercaseQuestion.includes("feel") ||
       lowercaseQuestion.includes("emotion") ||
       lowercaseQuestion.includes("happy") ||
-      lowercaseQuestion.includes("sad")
+      lowercaseQuestion.includes("sad") ||
+      lowercaseQuestion.includes("anxiety") ||
+      lowercaseQuestion.includes("stress") ||
+      lowercaseQuestion.includes("mood")
     ) {
       contextMap = questionKeywords.relationship
     }
@@ -548,7 +1037,10 @@ export function getContextualHouses(question: string): House[] {
     else if (
       lowercaseQuestion.includes("should") ||
       lowercaseQuestion.includes("decide") ||
-      lowercaseQuestion.includes("right choice")
+      lowercaseQuestion.includes("choice") ||
+      lowercaseQuestion.includes("option") ||
+      lowercaseQuestion.includes("right choice") ||
+      lowercaseQuestion.includes("wrong choice")
     ) {
       contextMap = questionKeywords.decision
     }
@@ -556,15 +1048,19 @@ export function getContextualHouses(question: string): House[] {
     else if (
       lowercaseQuestion.includes("will i") ||
       lowercaseQuestion.includes("future") ||
-      lowercaseQuestion.includes("going to")
+      lowercaseQuestion.includes("going to") ||
+      lowercaseQuestion.includes("happen") ||
+      lowercaseQuestion.includes("outcome")
     ) {
-      contextMap = questionKeywords.growth
+      contextMap = questionKeywords.future
     }
     // Timing questions
     else if (
       lowercaseQuestion.includes("when") ||
       lowercaseQuestion.includes("how long") ||
-      lowercaseQuestion.includes("time")
+      lowercaseQuestion.includes("time") ||
+      lowercaseQuestion.includes("soon") ||
+      lowercaseQuestion.includes("wait")
     ) {
       contextMap = {
         1: "Readiness",
@@ -579,6 +1075,49 @@ export function getContextualHouses(question: string): House[] {
         10: "Manifestation",
         11: "External Factors",
         12: "Divine Timing",
+      }
+    }
+    // Purpose questions
+    else if (
+      lowercaseQuestion.includes("purpose") ||
+      lowercaseQuestion.includes("meaning") ||
+      lowercaseQuestion.includes("why am i") ||
+      lowercaseQuestion.includes("meant to") ||
+      lowercaseQuestion.includes("mission")
+    ) {
+      contextMap = questionKeywords.purpose
+    }
+    // Self-improvement questions
+    else if (
+      lowercaseQuestion.includes("improve") ||
+      lowercaseQuestion.includes("better") ||
+      lowercaseQuestion.includes("develop") ||
+      lowercaseQuestion.includes("growth") ||
+      lowercaseQuestion.includes("potential")
+    ) {
+      contextMap = questionKeywords.growth
+    }
+    // Present situation questions
+    else if (
+      lowercaseQuestion.includes("happening") ||
+      lowercaseQuestion.includes("current") ||
+      lowercaseQuestion.includes("situation") ||
+      lowercaseQuestion.includes("now") ||
+      lowercaseQuestion.includes("present")
+    ) {
+      contextMap = {
+        1: "Current Self",
+        2: "Current Resources",
+        3: "Current Understanding",
+        4: "Current Foundation",
+        5: "Current Expression",
+        6: "Current Habits",
+        7: "Current Relationships",
+        8: "Current Challenges",
+        9: "Current Direction",
+        10: "Current Position",
+        11: "Current Support",
+        12: "Current Undercurrents",
       }
     }
   }

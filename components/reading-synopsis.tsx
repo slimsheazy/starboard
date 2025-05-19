@@ -95,8 +95,11 @@ export default function ReadingSynopsis({ charms, houses, question }: ReadingSyn
   )
 }
 
-// Function to generate a reading synopsis based on the charms, houses, and question
+// Improved function to generate a reading synopsis based on the charms, houses, and question
 function generateSynopsis(charms: Charm[], houses: House[], question: string): string {
+  // Analyze the question to understand context and intent
+  const questionContext = analyzeQuestion(question)
+
   // Count charms by category
   const categoryCounts: Record<string, number> = {}
   charms.forEach((charm) => {
@@ -126,17 +129,7 @@ function generateSynopsis(charms: Charm[], houses: House[], question: string): s
   const rareCharms = charms.filter((charm) => charm.rarity === "rare")
   const rareCharmCount = rareCharms.length
 
-  // Get notable charms (rare ones or ones with significant meanings)
-  const notableCharms = charms.filter(
-    (charm) =>
-      charm.rarity === "rare" ||
-      charm.name === "Eclipse" ||
-      charm.name === "Catalyst" ||
-      charm.name === "Synchronicity" ||
-      charm.name === "Tipping Point",
-  )
-
-  // Find specific charm combinations that have special meanings
+  // Find notable charm combinations
   const hasFlowAndObstacle =
     charms.some((c) => c.name === "Flow") && charms.some((c) => c.name === "Hiccup" || c.name === "Interference")
   const hasRewindAndFuture =
@@ -148,461 +141,514 @@ function generateSynopsis(charms: Charm[], houses: House[], question: string): s
     charms.some((c) => c.name === "Transformation")
 
   // Find the most relevant house based on the question
-  let focusHouse: House | undefined
-  if (question) {
-    const lowerQuestion = question.toLowerCase()
-    if (lowerQuestion.includes("career") || lowerQuestion.includes("work") || lowerQuestion.includes("job"))
-      focusHouse = houses.find((h) => h.number === 10 || h.number === 6)
-    else if (
-      lowerQuestion.includes("love") ||
-      lowerQuestion.includes("relationship") ||
-      lowerQuestion.includes("partner")
-    )
-      focusHouse = houses.find((h) => h.number === 7 || h.number === 5)
-    else if (lowerQuestion.includes("money") || lowerQuestion.includes("finance"))
-      focusHouse = houses.find((h) => h.number === 2 || h.number === 8)
-    else if (lowerQuestion.includes("health") || lowerQuestion.includes("wellness"))
-      focusHouse = houses.find((h) => h.number === 6 || h.number === 1)
-    else if (lowerQuestion.includes("family") || lowerQuestion.includes("home"))
-      focusHouse = houses.find((h) => h.number === 4)
-    else if (lowerQuestion.includes("learn") || lowerQuestion.includes("study") || lowerQuestion.includes("education"))
-      focusHouse = houses.find((h) => h.number === 3 || h.number === 9)
-  }
+  const focusHouse = findRelevantHouse(houses, questionContext)
 
-  // Generate the synopsis
+  // Generate the synopsis - more concise and direct
   let synopsis = ""
 
-  // Start with a question-based intro if available
-  if (question) {
-    const lowerQuestion = question.toLowerCase()
-    if (lowerQuestion.includes("should")) {
-      synopsis += `Your question about ${lowerQuestion.includes("i") ? "what you should do" : "what action to take"} reveals `
-    } else if (lowerQuestion.includes("when")) {
-      synopsis += `Your timing question about ${lowerQuestion.substring(lowerQuestion.indexOf("when") + 5, lowerQuestion.indexOf("?") > 0 ? lowerQuestion.indexOf("?") : lowerQuestion.length).trim()} suggests `
-    } else if (lowerQuestion.includes("why")) {
-      synopsis += `Your search to understand ${lowerQuestion.substring(lowerQuestion.indexOf("why") + 4, lowerQuestion.indexOf("?") > 0 ? lowerQuestion.indexOf("?") : lowerQuestion.length).trim()} shows `
-    } else if (lowerQuestion.includes("how")) {
-      synopsis += `Your question about how to ${lowerQuestion.substring(lowerQuestion.indexOf("how") + 7, lowerQuestion.indexOf("?") > 0 ? lowerQuestion.indexOf("?") : lowerQuestion.length).trim()} indicates `
-    } else if (lowerQuestion.includes("who")) {
-      synopsis += `Your inquiry about ${lowerQuestion.substring(lowerQuestion.indexOf("who") + 4, lowerQuestion.indexOf("?") > 0 ? lowerQuestion.indexOf("?") : lowerQuestion.length).trim()} reveals `
-    } else if (lowerQuestion.includes("where")) {
-      synopsis += `Your location question about ${lowerQuestion.substring(lowerQuestion.indexOf("where") + 6, lowerQuestion.indexOf("?") > 0 ? lowerQuestion.indexOf("?") : lowerQuestion.length).trim()} points to `
-    } else {
-      // Extract key nouns from the question
-      const words = lowerQuestion.split(" ")
-      const keyNouns = words.filter(
-        (word) =>
-          word.length > 3 &&
-          ![
-            "what",
-            "when",
-            "where",
-            "which",
-            "will",
-            "would",
-            "could",
-            "should",
-            "about",
-            "with",
-            "from",
-            "that",
-            "this",
-            "these",
-            "those",
-            "have",
-            "does",
-            "your",
-          ].includes(word),
-      )
+  // Start with a context-aware introduction
+  synopsis += generateIntroduction(questionContext, dominantCategory)
 
-      if (keyNouns.length > 0) {
-        const randomNoun = keyNouns[Math.floor(Math.random() * keyNouns.length)]
-        synopsis += `Your question about ${randomNoun} reveals `
-      } else {
-        synopsis += "Your inquiry reveals "
-      }
-    }
-  } else {
-    // Generic intros if no question
-    const intros = [
-      "The celestial alignment today reveals ",
-      "The current astral pattern shows ",
-      "Today's cosmic configuration indicates ",
-      "The present stellar arrangement suggests ",
-      "The astrological wheel currently presents ",
-    ]
-    synopsis += intros[Math.floor(Math.random() * intros.length)]
+  // Add core insight based on dominant theme - keep it concise
+  synopsis += generateCoreInsight(dominantCategory, questionContext)
+
+  // Add specific charm combination insights if present - only the most relevant ones
+  if (hasFlowAndObstacle && (questionContext.topic === "challenges" || questionContext.topic === "general")) {
+    synopsis += `Adapt to obstacles rather than forcing your way through. `
   }
 
-  // Add dominant theme interpretation with more specificity
-  if (dominantCategory === "Growth") {
-    synopsis += `a significant period of personal development${maxCount > 4 ? ", particularly in your spiritual and intellectual dimensions" : ""}. `
-    synopsis += `You're entering a phase where ${maxCount > 5 ? "profound" : "important"} inner expansion is not only possible but likely inevitable. `
-  } else if (dominantCategory === "Challenges") {
-    synopsis += `a series of ${maxCount > 5 ? "substantial" : "notable"} obstacles that require your focused attention and perseverance. `
-    synopsis += `These challenges aren't meant to defeat you but to ${maxCount > 4 ? "fundamentally transform" : "strengthen"} your resolve and capabilities. `
-  } else if (dominantCategory === "Opportunities") {
-    synopsis += `${maxCount > 5 ? "exceptional" : "promising"} new possibilities that are emerging in your path. `
-    synopsis += `These opportunities may appear ${maxCount > 4 ? "suddenly and require quick action" : "gradually but will require your recognition"}. `
-  } else if (dominantCategory === "Transitions") {
-    synopsis += `a period of ${maxCount > 5 ? "profound" : "significant"} change and transformation in your life. `
-    synopsis += `You're standing at a threshold between what was and what will be, with ${maxCount > 4 ? "major shifts in your fundamental circumstances" : "important changes in your daily reality"}. `
-  } else if (dominantCategory === "Relationships") {
-    synopsis += `important dynamics in your connections with ${maxCount > 5 ? "someone deeply significant to you" : "others around you"}. `
-    synopsis += `These relationships are ${maxCount > 4 ? "at a critical juncture that requires careful attention" : "highlighting important lessons for your personal growth"}. `
-  } else if (dominantCategory === "Insights") {
-    synopsis += `crucial realizations that are ${maxCount > 5 ? "about to dramatically shift your perspective" : "gradually coming into your awareness"}. `
-    synopsis += `Your intuition is especially heightened now, offering ${maxCount > 4 ? "profound wisdom if you're willing to listen" : "valuable guidance for your current situation"}. `
-  } else {
-    synopsis += "a complex interplay of energies in your current situation. "
+  if (
+    hasRewindAndFuture &&
+    (questionContext.topic === "past" || questionContext.topic === "future" || questionContext.topic === "general")
+  ) {
+    synopsis += `A past situation connects directly to a future opportunity. `
   }
 
-  // Add secondary theme with more detail if available
-  if (secondaryCategory && secondMaxCount > 1) {
-    if (secondaryCategory === "Growth") {
-      synopsis += `There's also significant potential for personal growth through ${secondMaxCount > 3 ? "deep inner work and self-reflection" : "learning from your experiences"}. `
-    } else if (secondaryCategory === "Challenges") {
-      synopsis += `Be prepared to navigate ${secondMaxCount > 3 ? "some particularly testing obstacles" : "challenges that will strengthen your resolve"}. `
-    } else if (secondaryCategory === "Opportunities") {
-      synopsis += `Look for ${secondMaxCount > 3 ? "unexpected doors opening in surprising areas of your life" : "new possibilities that may not be immediately obvious"}. `
-    } else if (secondaryCategory === "Transitions") {
-      synopsis += `Embrace the ${secondMaxCount > 3 ? "profound transformations" : "changes"} that are unfolding, as they're leading you to necessary evolution. `
-    } else if (secondaryCategory === "Relationships") {
-      synopsis += `Your connections with ${secondMaxCount > 3 ? "specific key people" : "others"} will play a ${secondMaxCount > 3 ? "crucial" : "significant"} role in this process. `
-    } else if (secondaryCategory === "Insights") {
-      synopsis += `Trust your ${secondMaxCount > 3 ? "deepest intuitive knowing" : "intuition"} to guide you through the uncertainties you face. `
-    }
+  if (
+    hasInsightPair &&
+    (questionContext.topic === "insight" || questionContext.topic === "decision" || questionContext.topic === "general")
+  ) {
+    synopsis += `Self-reflection will lead to a sudden realization that changes your perspective. `
   }
 
-  // Add specific charm combination interpretations
-  if (hasFlowAndObstacle) {
-    synopsis +=
-      "You're facing obstacles that require you to adapt rather than force your way through. The path of least resistance may seem counterintuitive but will ultimately be most effective. "
+  if (
+    hasTransformationTriad &&
+    (questionContext.topic === "change" || questionContext.topic === "growth" || questionContext.topic === "general")
+  ) {
+    synopsis += `You're beginning a significant transformation that will unfold in stages. `
   }
 
-  if (hasRewindAndFuture) {
-    synopsis +=
-      "A situation from your past is directly connected to an opportunity in your future. Resolving old patterns will unlock new potential. "
-  }
-
-  if (hasInsightPair) {
-    synopsis +=
-      "A moment of self-reflection will lead to a sudden realization that changes your perspective on a current situation. Pay attention to subtle insights. "
-  }
-
-  if (hasTransformationTriad) {
-    synopsis +=
-      "You're at the beginning of a profound three-part transformation process. What begins as a small catalyst will reach a tipping point before leading to complete metamorphosis. "
-  }
-
-  // Add interpretation for rare charms if present with more specificity
+  // Add rare charm insight if present - keep it brief but meaningful
   if (rareCharmCount > 0) {
-    if (rareCharmCount === 1) {
-      const rareCharm = rareCharms[0]
-      synopsis += `The rare ${rareCharm.name} charm appearing in your reading is highly significant—it suggests ${
-        rareCharm.name === "Eclipse"
-          ? "a profound realignment of your priorities and path"
-          : rareCharm.name === "Supernova"
-            ? "a dramatic and possibly sudden transformation in a key area of your life"
-            : rareCharm.name === "Wormhole"
-              ? "an unexpected shortcut or solution that defies conventional approaches"
-              : rareCharm.name === "Quantum Leap"
-                ? "a sudden advancement or opportunity that seems to appear from nowhere"
-                : "a particularly significant moment or opportunity"
-      }. `
-    } else if (rareCharmCount === 2) {
-      synopsis += `The presence of multiple rare charms (${rareCharms[0].name}, ${rareCharms[1].name}) indicates an extraordinarily powerful period of potential transformation. These energies rarely appear together and suggest you're at a crucial crossroads with far-reaching implications. `
-    } else {
-      synopsis += `With ${rareCharmCount} rare charms present, this reading reveals one of the most significant periods you'll experience. The convergence of these powerful energies suggests a cosmic alignment that may only occur once in many years. Pay extremely close attention to synchronicities and unusual opportunities. `
-    }
-  }
-
-  // Add a notable charm interpretation if available with more detail
-  if (notableCharms.length > 0 && notableCharms[0].name !== rareCharms[0]?.name) {
-    const notableCharm = notableCharms[0]
-    synopsis += `The ${notableCharm.name} charm in your reading specifically points to ${getDetailedCharmInterpretation(notableCharm.name)}. `
+    synopsis += generateRareCharmInsight(rareCharms, questionContext)
   }
 
   // Add house-specific guidance if a focus house was identified
   if (focusHouse) {
-    synopsis += `The ${focusHouse.name} (${focusHouse.keyword}) is particularly activated in this reading, suggesting that ${getHouseInterpretation(focusHouse, dominantCategory)}. `
+    synopsis += `The ${focusHouse.name} (${focusHouse.contextKeyword || focusHouse.keyword}) is particularly activated, suggesting ${generateHouseInsight(focusHouse, dominantCategory, questionContext)}. `
   }
 
-  // Add a conclusion based on the overall reading with specific advice
-  const conclusions = [
-    `Consider how these specific energies are manifesting in your ${
-      dominantCategory === "Relationships"
-        ? "connections with others"
-        : dominantCategory === "Growth"
-          ? "personal development"
-          : dominantCategory === "Challenges"
-            ? "current obstacles"
-            : dominantCategory === "Opportunities"
-              ? "potential paths forward"
-              : dominantCategory === "Transitions"
-                ? "life changes"
-                : dominantCategory === "Insights"
-                  ? "thought patterns"
-                  : "daily experience"
-    }.`,
-
-    `To best navigate this period, focus on ${
-      dominantCategory === "Relationships"
-        ? "authentic communication and emotional honesty"
-        : dominantCategory === "Growth"
-          ? "learning opportunities and self-improvement"
-          : dominantCategory === "Challenges"
-            ? "resilience and creative problem-solving"
-            : dominantCategory === "Opportunities"
-              ? "remaining open and responsive to new possibilities"
-              : dominantCategory === "Transitions"
-                ? "accepting change while maintaining your core values"
-                : dominantCategory === "Insights"
-                  ? "meditation and reflective practices"
-                  : "balance and mindfulness"
-    }.`,
-
-    `The most important action you can take now is to ${
-      dominantCategory === "Relationships"
-        ? "invest time in the connections that truly matter"
-        : dominantCategory === "Growth"
-          ? "step outside your comfort zone deliberately"
-          : dominantCategory === "Challenges"
-            ? "face difficulties directly rather than avoiding them"
-            : dominantCategory === "Opportunities"
-              ? "say yes to experiences that align with your values"
-              : dominantCategory === "Transitions"
-                ? "release what no longer serves your evolution"
-                : dominantCategory === "Insights"
-                  ? "trust your inner knowing above external opinions"
-                  : "create harmony between your actions and your intentions"
-    }.`,
-
-    `Pay special attention to ${
-      dominantCategory === "Relationships"
-        ? "how you respond to others' needs and boundaries"
-        : dominantCategory === "Growth"
-          ? "subtle lessons hidden in everyday experiences"
-          : dominantCategory === "Challenges"
-            ? "the wisdom each obstacle contains"
-            : dominantCategory === "Opportunities"
-              ? "synchronicities and unexpected connections"
-              : dominantCategory === "Transitions"
-                ? "the emotions that arise during periods of change"
-                : dominantCategory === "Insights"
-                  ? "dreams, intuitive flashes, and gut feelings"
-                  : "the patterns emerging in your experience"
-    }.`,
-
-    `This is a powerful time to ${
-      dominantCategory === "Relationships"
-        ? "heal old wounds in your connections"
-        : dominantCategory === "Growth"
-          ? "invest in your personal development"
-          : dominantCategory === "Challenges"
-            ? "develop new strengths through adversity"
-            : dominantCategory === "Opportunities"
-              ? "expand your horizons in meaningful ways"
-              : dominantCategory === "Transitions"
-                ? "embrace transformation wholeheartedly"
-                : dominantCategory === "Insights"
-                  ? "deepen your spiritual practices"
-                  : "align your actions with your highest values"
-    }.`,
-  ]
-
-  synopsis += conclusions[Math.floor(Math.random() * conclusions.length)]
+  // Add a practical, concise conclusion
+  synopsis += generateConclusion(dominantCategory, questionContext)
 
   return synopsis
 }
 
-// Helper function to get detailed interpretations for specific charms
-function getDetailedCharmInterpretation(charmName: string): string {
-  const interpretations: Record<string, string> = {
-    Flow: "a need to surrender to natural rhythms rather than forcing outcomes—specifically, the situation you're concerned about requires adaptability and patience rather than direct action",
-    Catalyst:
-      "a specific trigger event that will set larger changes in motion—be particularly attentive to seemingly small but unusual occurrences in the coming days",
-    Detour:
-      "an unexpected path that initially seems to take you away from your goal but will ultimately lead you to a better destination than your original route",
-    Shortcut:
-      "an opportunity to accelerate your progress through unconventional means—look for solutions that others might overlook",
-    Backdrop:
-      "the environment or context of your situation being more significant than the specific details—pay attention to the setting and underlying conditions",
-    Rewind:
-      "the need to revisit a specific past situation or decision that contains unresolved elements crucial to your current progress",
-    "Gut Check":
-      "a situation where your intuition will be more reliable than logical analysis—particularly when making an important decision in the near future",
-    "Fine Print":
-      "crucial details that are easy to miss but will significantly impact outcomes—take extra time to examine all aspects of any agreements",
-    "Last Call":
-      "a final opportunity that's about to expire—something you've been considering but delaying requires immediate action",
-    Overtime:
-      "a situation requiring additional effort beyond what you initially expected—the extra investment will yield proportionally greater results",
-    "Tipping Point":
-      "a delicate balance that's about to shift dramatically—small actions now will have amplified consequences",
-    Reminder:
-      "knowledge you already possess but have forgotten or overlooked—the solution you seek is already within your awareness",
-    Interference:
-      "external factors actively disrupting your plans—identify specific sources of opposition and adjust your approach accordingly",
-    "Missed Call":
-      "an opportunity you didn't recognize when it first appeared—look back at recent offers or ideas you dismissed",
-    "Open Tab":
-      "unfinished business that must be addressed before you can progress—specifically, an incomplete project or conversation",
-    "Out of Context":
-      "a situation where you lack crucial information—suspend judgment until you understand the complete picture",
-    "Déjà Vu":
-      "a recurring pattern in your life that contains an important lesson—this cycle will continue until you address its root cause",
-    Jumpstart:
-      "a sudden infusion of energy or motivation coming soon—prepare to capitalize on this burst of productivity",
-    "Red Light":
-      "a clear warning to stop your current approach—continuing on your present path leads to unfavorable outcomes",
-    "Second Wind":
-      "renewed strength arriving after a period of difficulty—perseverance through your current challenges will be rewarded",
-    Exposed:
-      "hidden truths coming to light in a specific situation—prepare for revelations that may initially be uncomfortable but ultimately liberating",
-    Synchronicity:
-      "meaningful coincidences guiding your path—pay special attention to unusual patterns, repeated numbers, or chance encounters",
-    "Locked Door":
-      "a path that's currently inaccessible for good reason—this obstacle is protecting you from a premature or misaligned direction",
-    "Wrong Turn":
-      "a mistake that will lead to unexpected positive outcomes—what initially seems like an error contains a hidden opportunity",
-    Hiccup:
-      "minor obstacles that are more annoying than significant—maintain perspective rather than allowing small problems to derail your focus",
-    Fog: "temporary confusion or uncertainty that will eventually clear—avoid making major decisions until visibility improves",
-    "Mirror Check": "the need for honest self-reflection about your motivations and behaviors in a specific situation",
-    Gasp: "a sudden realization or insight that will change your perspective—remain open to surprising information",
-    "Thin Ice": "a precarious situation requiring extreme caution—proceed carefully and be mindful of warning signs",
-    Eclipse:
-      "a rare alignment bringing profound change to your fundamental circumstances—what seems like an ending is actually a powerful new beginning",
-    Supernova:
-      "an explosive transformation that will completely reshape a key area of your life—prepare for dramatic but ultimately positive change",
-    Wormhole:
-      "an unexpected shortcut through what seemed like insurmountable challenges—an unusual solution will present itself",
-    "Quantum Leap":
-      "an inexplicable jump forward in your journey—progress that normally would take months or years may happen very rapidly",
-    Stargate:
-      "access to entirely new dimensions of understanding—your perspective is about to expand in ways you cannot currently imagine",
+// Analyze the question to understand context and intent
+function analyzeQuestion(question: string): {
+  topic: string
+  tense: "past" | "present" | "future"
+  type: "what" | "how" | "why" | "when" | "where" | "who" | "yes/no" | "general"
+  intent: "guidance" | "prediction" | "understanding" | "decision" | "confirmation" | "general"
+  sentiment: "positive" | "negative" | "neutral"
+  keywords: string[]
+} {
+  if (!question) {
+    return {
+      topic: "general",
+      tense: "present",
+      type: "general",
+      intent: "general",
+      sentiment: "neutral",
+      keywords: [],
+    }
   }
 
-  return interpretations[charmName] || "an important influence in your current situation that requires your attention"
+  const lowerQuestion = question.toLowerCase()
+
+  // Determine topic
+  let topic = "general"
+
+  // Career and work
+  if (/\b(career|job|work|business|profession|employment)\b/.test(lowerQuestion)) {
+    topic = "career"
+  }
+  // Relationships
+  else if (/\b(love|relationship|partner|marriage|dating|romance|boyfriend|girlfriend)\b/.test(lowerQuestion)) {
+    topic = "relationships"
+  }
+  // Money and finances
+  else if (/\b(money|finance|wealth|income|debt|investment|financial)\b/.test(lowerQuestion)) {
+    topic = "financial"
+  }
+  // Health
+  else if (/\b(health|wellness|illness|medical|fitness|diet|sick|healing)\b/.test(lowerQuestion)) {
+    topic = "health"
+  }
+  // Family and home
+  else if (/\b(family|home|parent|child|house|domestic)\b/.test(lowerQuestion)) {
+    topic = "family"
+  }
+  // Personal growth
+  else if (/\b(growth|improve|develop|better|potential|progress)\b/.test(lowerQuestion)) {
+    topic = "growth"
+  }
+  // Spiritual
+  else if (/\b(spirit|soul|meaning|purpose|faith|belief)\b/.test(lowerQuestion)) {
+    topic = "spiritual"
+  }
+  // Decision
+  else if (/\b(decision|choice|choose|option|path|direction)\b/.test(lowerQuestion)) {
+    topic = "decision"
+  }
+  // Change
+  else if (/\b(change|transition|transform|shift|move|new)\b/.test(lowerQuestion)) {
+    topic = "change"
+  }
+  // Challenges
+  else if (/\b(challenge|problem|difficult|struggle|obstacle|issue)\b/.test(lowerQuestion)) {
+    topic = "challenges"
+  }
+  // Insight
+  else if (/\b(insight|understand|clarity|realize|see|perspective)\b/.test(lowerQuestion)) {
+    topic = "insight"
+  }
+  // Past
+  else if (/\b(past|history|before|previous|used to|regret)\b/.test(lowerQuestion)) {
+    topic = "past"
+  }
+  // Future
+  else if (/\b(future|will|going to|plan|expect|anticipate)\b/.test(lowerQuestion)) {
+    topic = "future"
+  }
+
+  // Determine tense
+  let tense: "past" | "present" | "future" = "present"
+  if (/\b(will|going to|future|plan|next|soon|tomorrow|upcoming)\b/.test(lowerQuestion)) {
+    tense = "future"
+  } else if (/\b(did|was|had|past|before|previous|history|ago)\b/.test(lowerQuestion)) {
+    tense = "past"
+  } else if (/\b(now|current|today|present|happening|am|is|are)\b/.test(lowerQuestion)) {
+    tense = "present"
+  }
+
+  // Determine question type
+  let type: "what" | "how" | "why" | "when" | "where" | "who" | "yes/no" | "general" = "general"
+  if (lowerQuestion.startsWith("what") || lowerQuestion.includes(" what ")) {
+    type = "what"
+  } else if (lowerQuestion.startsWith("how") || lowerQuestion.includes(" how ")) {
+    type = "how"
+  } else if (lowerQuestion.startsWith("why") || lowerQuestion.includes(" why ")) {
+    type = "why"
+  } else if (lowerQuestion.startsWith("when") || lowerQuestion.includes(" when ")) {
+    type = "when"
+  } else if (lowerQuestion.startsWith("where") || lowerQuestion.includes(" where ")) {
+    type = "where"
+  } else if (lowerQuestion.startsWith("who") || lowerQuestion.includes(" who ")) {
+    type = "who"
+  } else if (/\b(should|will|can|is|are|do|does|am|have|has)\b/.test(lowerQuestion)) {
+    type = "yes/no"
+  }
+
+  // Determine intent
+  let intent: "guidance" | "prediction" | "understanding" | "decision" | "confirmation" | "general" = "general"
+  if (/\b(should|advice|help|guide|direction)\b/.test(lowerQuestion)) {
+    intent = "guidance"
+  } else if (/\b(will|future|happen|outcome|result)\b/.test(lowerQuestion)) {
+    intent = "prediction"
+  } else if (/\b(why|how|understand|meaning|reason)\b/.test(lowerQuestion)) {
+    intent = "understanding"
+  } else if (/\b(decide|choice|choose|option|path)\b/.test(lowerQuestion)) {
+    intent = "decision"
+  } else if (/\b(right|correct|true|confirm|validate)\b/.test(lowerQuestion)) {
+    intent = "confirmation"
+  }
+
+  // Determine sentiment
+  let sentiment: "positive" | "negative" | "neutral" = "neutral"
+  const positiveWords = /\b(good|better|best|positive|success|improve|hope|happy|joy|love|opportunity|growth)\b/
+  const negativeWords =
+    /\b(bad|worse|worst|negative|fail|problem|trouble|difficult|challenge|struggle|pain|sad|fear|worry)\b/
+
+  if (positiveWords.test(lowerQuestion)) {
+    sentiment = "positive"
+  } else if (negativeWords.test(lowerQuestion)) {
+    sentiment = "negative"
+  }
+
+  // Extract meaningful keywords
+  const stopWords = [
+    "the",
+    "a",
+    "an",
+    "and",
+    "or",
+    "but",
+    "if",
+    "because",
+    "as",
+    "what",
+    "when",
+    "where",
+    "how",
+    "why",
+    "is",
+    "are",
+    "was",
+    "were",
+    "be",
+    "been",
+    "being",
+    "have",
+    "has",
+    "had",
+    "do",
+    "does",
+    "did",
+    "will",
+    "would",
+    "should",
+    "could",
+    "may",
+    "might",
+    "must",
+    "can",
+    "about",
+    "for",
+    "to",
+    "in",
+    "on",
+    "with",
+    "by",
+    "at",
+    "from",
+    "of",
+    "my",
+    "mine",
+    "your",
+    "yours",
+    "their",
+    "theirs",
+    "our",
+    "ours",
+    "his",
+    "her",
+    "hers",
+    "its",
+    "this",
+    "that",
+    "these",
+    "those",
+    "i",
+    "you",
+    "he",
+    "she",
+    "it",
+    "we",
+    "they",
+    "me",
+    "him",
+    "us",
+    "them",
+  ]
+
+  const words = lowerQuestion.split(/\s+/)
+  const keywords = words
+    .map((word) => word.replace(/[.,?!;:'"()]/g, ""))
+    .filter((word) => !stopWords.includes(word) && word.length > 2)
+
+  return {
+    topic,
+    tense,
+    type,
+    intent,
+    sentiment,
+    keywords,
+  }
 }
 
-// Helper function to get house-specific interpretations
-function getHouseInterpretation(house: House, dominantCategory: string): string {
-  const houseInterpretations: Record<number, Record<string, string>> = {
-    1: {
-      Growth: "your personal identity and self-image are evolving in significant ways",
-      Challenges: "you're facing important tests of your self-confidence and personal direction",
-      Opportunities: "new possibilities for self-expression and authentic living are emerging",
-      Transitions: "your sense of self is undergoing important transformation",
-      Relationships: "how you present yourself to others is particularly significant now",
-      Insights: "deeper understanding of your true self is becoming available",
-      default: "your personal identity and how you project yourself are key themes",
+// Find the most relevant house based on the question context
+function findRelevantHouse(houses: House[], context: ReturnType<typeof analyzeQuestion>): House | undefined {
+  const topicToHouseMap: Record<string, number[]> = {
+    career: [10, 6, 2],
+    relationships: [7, 5, 8],
+    financial: [2, 8, 10],
+    health: [6, 1, 12],
+    family: [4, 5, 7],
+    growth: [1, 9, 5],
+    spiritual: [12, 9, 8],
+    decision: [3, 7, 9],
+    change: [8, 1, 9],
+    challenges: [6, 8, 12],
+    insight: [3, 9, 12],
+    past: [4, 8, 12],
+    future: [9, 10, 11],
+    general: [1, 10, 7],
+  }
+
+  // Get relevant house numbers for the topic
+  const relevantHouseNumbers = topicToHouseMap[context.topic] || topicToHouseMap.general
+
+  // Find the first matching house
+  for (const houseNumber of relevantHouseNumbers) {
+    const house = houses.find((h) => h.number === houseNumber)
+    if (house) return house
+  }
+
+  // Fallback to a default house if none found
+  return houses.find((h) => h.number === 1)
+}
+
+// Generate a context-aware introduction
+function generateIntroduction(context: ReturnType<typeof analyzeQuestion>, dominantCategory: string): string {
+  if (!context.keywords.length) {
+    return "The celestial patterns reveal "
+  }
+
+  // Handle different question types and intents
+  if (context.intent === "guidance") {
+    return "For guidance on this matter, the stars suggest "
+  }
+
+  if (context.intent === "prediction") {
+    return "Looking toward your future, the celestial patterns indicate "
+  }
+
+  if (context.intent === "understanding") {
+    return "To understand this situation better, the reading reveals "
+  }
+
+  if (context.intent === "decision") {
+    return "To help with your decision, the stars highlight "
+  }
+
+  if (context.intent === "confirmation") {
+    return "To confirm your thoughts, the reading shows "
+  }
+
+  // Handle different tenses
+  if (context.tense === "past") {
+    return "Regarding your past experiences, the reading indicates "
+  }
+
+  if (context.tense === "present") {
+    return "In your current situation, the stars reveal "
+  }
+
+  if (context.tense === "future") {
+    return "Looking ahead, your reading suggests "
+  }
+
+  // Default introduction
+  return "Your reading reveals "
+}
+
+// Generate core insight based on dominant theme
+function generateCoreInsight(dominantCategory: string, context: ReturnType<typeof analyzeQuestion>): string {
+  const insights: Record<string, Record<string, string>> = {
+    Growth: {
+      career: "significant professional development opportunities.",
+      relationships: "potential for deeper emotional connections.",
+      financial: "expanding resources and opportunities.",
+      health: "improving vitality and wellbeing.",
+      family: "strengthening family bonds.",
+      spiritual: "expanding spiritual awareness.",
+      decision: "evolving perspectives that inform your choices.",
+      challenges: "learning experiences within current difficulties.",
+      general: "a period of personal expansion and development.",
     },
-    2: {
-      Growth: "your relationship with material resources and self-worth is developing",
-      Challenges: "financial or value-based issues require your attention",
-      Opportunities: "new resources or income sources may become available",
-      Transitions: "your financial situation or value system is changing",
-      Relationships: "shared resources or differing values in relationships are highlighted",
-      Insights: "new understanding about what truly matters to you is emerging",
-      default: "your resources, values, and sense of self-worth are key themes",
+    Challenges: {
+      career: "obstacles that will strengthen your professional skills.",
+      relationships: "tests that will clarify your true connections.",
+      financial: "temporary setbacks leading to better strategies.",
+      health: "issues requiring attention and lifestyle changes.",
+      family: "family dynamics that need addressing.",
+      spiritual: "spiritual tests that deepen your understanding.",
+      decision: "difficult choices that lead to growth.",
+      general: "important obstacles that build your resilience.",
     },
-    3: {
-      Growth: "your communication skills and mental processes are developing",
-      Challenges: "difficulties in expressing yourself or processing information need addressing",
-      Opportunities: "new learning opportunities or connections with siblings/neighbors are appearing",
-      Transitions: "your communication style or thinking patterns are changing",
-      Relationships: "how you communicate within relationships is highlighted",
-      Insights: "new mental connections and ideas are becoming available",
-      default: "communication, learning, and your immediate environment are key themes",
+    Opportunities: {
+      career: "promising professional openings.",
+      relationships: "new connections or relationship potential.",
+      financial: "favorable financial possibilities.",
+      health: "chances to improve your wellbeing.",
+      family: "positive family developments.",
+      spiritual: "openings for spiritual advancement.",
+      decision: "favorable options becoming available.",
+      general: "new possibilities worth exploring.",
     },
-    4: {
-      Growth: "your sense of home, family, and emotional security is developing",
-      Challenges: "family matters or issues related to your foundations require attention",
-      Opportunities: "new possibilities for creating security and belonging are emerging",
-      Transitions: "your home situation or family dynamics are changing",
-      Relationships: "family connections or your emotional foundations in relationships are highlighted",
-      Insights: "deeper understanding of your emotional needs is becoming available",
-      default: "your home, family, and emotional foundations are key themes",
+    Transitions: {
+      career: "a career shift or evolution.",
+      relationships: "changing relationship dynamics.",
+      financial: "a financial phase change.",
+      health: "a health transformation process.",
+      family: "evolving family structures.",
+      spiritual: "spiritual metamorphosis.",
+      decision: "a turning point in your path.",
+      general: "significant life changes unfolding.",
     },
-    5: {
-      Growth: "your creative expression and capacity for joy are expanding",
-      Challenges: "obstacles to self-expression or pleasure need addressing",
-      Opportunities: "new avenues for creativity, romance, or joy are appearing",
-      Transitions: "your relationship with pleasure and self-expression is changing",
-      Relationships: "romantic connections or creative collaborations are highlighted",
-      Insights: "new understanding about what brings you joy is emerging",
-      default: "creativity, pleasure, and self-expression are key themes",
-    },
-    6: {
-      Growth: "your work habits, health practices, and service to others are developing",
-      Challenges: "health matters or work-related issues require attention",
-      Opportunities: "new possibilities for improving your daily life or work are emerging",
-      Transitions: "your daily routines or approach to service is changing",
-      Relationships: "working relationships or how you care for others are highlighted",
-      Insights: "new understanding about effective habits and routines is becoming available",
-      default: "your health, daily routines, and service to others are key themes",
-    },
-    7: {
-      Growth: "your approach to partnerships and one-on-one relationships is developing",
-      Challenges: "relationship difficulties or contractual matters need addressing",
-      Opportunities: "new partnerships or deeper connection in existing relationships are possible",
-      Transitions: "your relationship dynamics or partnership status is changing",
-      Relationships: "the balance of give and take in your close relationships is highlighted",
-      Insights: "new understanding about what you need in partnerships is emerging",
-      default: "partnerships, contracts, and one-on-one relationships are key themes",
-    },
-    8: {
-      Growth: "your relationship with transformation, shared resources, and intimacy is developing",
-      Challenges: "issues related to shared finances, intimacy, or letting go need addressing",
-      Opportunities: "powerful transformative experiences or financial benefits are possible",
-      Transitions: "your approach to intimacy or shared resources is fundamentally changing",
-      Relationships: "the deeper, more intimate aspects of your relationships are highlighted",
-      Insights: "profound realizations about your fears and desires are becoming available",
-      default: "transformation, shared resources, and intimacy are key themes",
-    },
-    9: {
-      Growth: "your worldview, beliefs, and higher learning are expanding",
-      Challenges: "philosophical questions or issues related to your beliefs need addressing",
-      Opportunities: "travel, education, or spiritual advancement are becoming possible",
-      Transitions: "your belief system or life philosophy is changing",
-      Relationships: "connections with people from different backgrounds are highlighted",
-      Insights: "new understanding about your place in the larger world is emerging",
-      default: "higher learning, travel, and your belief systems are key themes",
-    },
-    10: {
-      Growth: "your career path, public image, and life direction are developing",
-      Challenges: "professional obstacles or reputation issues need addressing",
-      Opportunities: "advancement in your career or public recognition is possible",
-      Transitions: "your professional identity or life direction is changing",
-      Relationships: "professional connections or your public persona in relationships are highlighted",
-      Insights: "clearer vision of your life's work is becoming available",
-      default: "your career, reputation, and life direction are key themes",
-    },
-    11: {
-      Growth: "your social networks, group affiliations, and future vision are developing",
-      Challenges: "issues with friends, groups, or your long-term goals need addressing",
-      Opportunities: "new social connections or progress toward your aspirations are possible",
-      Transitions: "your social circle or approach to achieving your hopes is changing",
-      Relationships: "friendships and community connections are highlighted",
-      Insights: "clearer understanding of your ideal future is becoming available",
-      default: "friendships, group activities, and your hopes for the future are key themes",
-    },
-    12: {
-      Growth: "your spiritual awareness and subconscious patterns are developing",
-      Challenges: "hidden issues or self-limiting patterns need addressing",
-      Opportunities: "spiritual insights or release from old limitations are possible",
-      Transitions: "your relationship with your inner world is changing",
-      Relationships: "unconscious patterns in your relationships are highlighted",
-      Insights: "access to your deeper wisdom and intuition is becoming available",
-      default: "your spiritual life, unconscious patterns, and hidden strengths are key themes",
+    Insights: {
+      career: "important professional realizations.",
+      relationships: "deeper understanding of your connections.",
+      financial: "clarity about your financial patterns.",
+      health: "awareness of health factors.",
+      family: "understanding of family dynamics.",
+      spiritual: "spiritual revelations.",
+      decision: "clarity for decision-making.",
+      general: "valuable realizations coming into focus.",
     },
   }
 
+  // Get the insight for the specific category and topic
+  const topicInsight = insights[dominantCategory]?.[context.topic]
+
+  // If no specific insight, use the general one
+  return topicInsight || insights[dominantCategory]?.general || "important energies affecting your situation."
+}
+
+// Generate insight for rare charms
+function generateRareCharmInsight(rareCharms: Charm[], context: ReturnType<typeof analyzeQuestion>): string {
+  if (rareCharms.length === 0) return ""
+
+  if (rareCharms.length === 1) {
+    const charm = rareCharms[0]
+    const insights: Record<string, string> = {
+      Eclipse: "a profound realignment in your path.",
+      Supernova: "a dramatic transformation in a key area.",
+      Wormhole: "an unexpected shortcut or solution.",
+      "Quantum Leap": "a sudden advancement or opportunity.",
+      Stargate: "access to new dimensions of understanding.",
+    }
+
+    return `The rare ${charm.name} charm indicates ${insights[charm.name] || "a significant moment or opportunity"}. `
+  }
+
+  return `The presence of multiple rare charms signals an extraordinary period of transformation. `
+}
+
+// Generate house-specific insight
+function generateHouseInsight(
+  house: House,
+  dominantCategory: string,
+  context: ReturnType<typeof analyzeQuestion>,
+): string {
+  const houseInsights: Record<number, string> = {
+    1: "focus on your identity and self-expression",
+    2: "attention to your resources and values",
+    3: "emphasis on communication and learning",
+    4: "importance of your emotional foundation",
+    5: "creative expression and joy",
+    6: "daily habits and practical matters",
+    7: "significant relationships and partnerships",
+    8: "transformation and shared resources",
+    9: "expansion of your perspective",
+    10: "career direction and public image",
+    11: "community connections and future vision",
+    12: "subconscious patterns and spiritual insights",
+  }
+
+  return houseInsights[house.number] || "important energies in this area of life"
+}
+
+// Generate a practical, concise conclusion
+function generateConclusion(dominantCategory: string, context: ReturnType<typeof analyzeQuestion>): string {
+  const conclusions: Record<string, Record<string, string>> = {
+    guidance: {
+      Growth: "Focus on learning opportunities and stepping outside your comfort zone.",
+      Challenges: "Address obstacles directly rather than avoiding them.",
+      Opportunities: "Stay alert to new possibilities that align with your values.",
+      Transitions: "Embrace change while maintaining your core values.",
+      Insights: "Trust your intuition and inner knowing.",
+      general: "Remain open to the guidance appearing in unexpected ways.",
+    },
+    prediction: {
+      Growth: "Expect significant personal development in the coming period.",
+      Challenges: "Prepare for tests that will ultimately strengthen you.",
+      Opportunities: "Watch for doors opening in unexpected areas.",
+      Transitions: "Anticipate meaningful shifts in your circumstances.",
+      Insights: "Look for revelations that will clarify your path.",
+      general: "The future holds important developments that require your attention.",
+    },
+    understanding: {
+      Growth: "Your situation contains valuable lessons for your development.",
+      Challenges: "Current difficulties are revealing important patterns.",
+      Opportunities: "Understanding the potential in your situation is key.",
+      Transitions: "This change is part of a larger meaningful pattern.",
+      Insights: "The clarity you seek is emerging through reflection.",
+      general: "The deeper meaning of your situation is becoming clearer.",
+    },
+    decision: {
+      Growth: "Choose the path that offers the greatest potential for development.",
+      Challenges: "Consider which option builds your strength and resilience.",
+      Opportunities: "Select the choice that keeps the most possibilities open.",
+      Transitions: "Decide which direction best supports necessary life changes.",
+      Insights: "Trust your inner knowing when making this choice.",
+      general: "Align your decision with your authentic values.",
+    },
+    general: {
+      Growth: "Embrace opportunities for learning and expansion.",
+      Challenges: "Face difficulties with courage and creativity.",
+      Opportunities: "Remain receptive to new possibilities.",
+      Transitions: "Flow with the changes occurring in your life.",
+      Insights: "Trust the wisdom emerging within you.",
+      general: "Pay attention to the patterns unfolding in your experience.",
+    },
+  }
+
+  // Get the conclusion for the specific intent and dominant category
   return (
-    houseInterpretations[house.number]?.[dominantCategory] ||
-    houseInterpretations[house.number]?.default ||
-    `the themes of ${house.keyword} are particularly important right now`
+    conclusions[context.intent]?.[dominantCategory] ||
+    conclusions.general[dominantCategory] ||
+    conclusions.general.general
   )
 }
