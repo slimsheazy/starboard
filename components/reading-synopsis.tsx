@@ -17,31 +17,35 @@ export default function ReadingSynopsis({ charms, houses, question }: ReadingSyn
   const [synopsis, setSynopsis] = useState<string>("")
   const [isGenerating, setIsGenerating] = useState(true)
   const [combinations, setCombinations] = useState<ReturnType<typeof findCharmCombinations>>([])
+  const [readingStyle, setReadingStyle] = useState<"direct" | "mystical" | "practical">("direct")
 
   useEffect(() => {
     if (charms.length === 0) return
 
     setIsGenerating(true)
 
-    // Find charm combinations
+    // Determine reading style based on question and charms
+    const style = determineReadingStyle(question, charms)
+    setReadingStyle(style)
+
     const foundCombinations = findCharmCombinations(charms)
     setCombinations(foundCombinations)
 
     if (foundCombinations.length > 0) {
-      // Trigger combination sound after a brief delay
       setTimeout(() => {
         triggerCombination()
-      }, 2000) // Play after the synopsis appears
+      }, 2000)
     }
 
-    // Generate the reading synopsis
-    const generatedSynopsis = generateSynopsis(charms, houses, question, foundCombinations)
+    const generatedSynopsis = generateVariedSynopsis(charms, houses, question, foundCombinations, style)
 
-    // Simulate a brief delay to make it feel like the app is "thinking"
-    const timer = setTimeout(() => {
-      setSynopsis(generatedSynopsis)
-      setIsGenerating(false)
-    }, 1500)
+    const timer = setTimeout(
+      () => {
+        setSynopsis(generatedSynopsis)
+        setIsGenerating(false)
+      },
+      1200 + Math.random() * 800,
+    ) // Variable timing
 
     return () => clearTimeout(timer)
   }, [charms, houses, question])
@@ -53,7 +57,6 @@ export default function ReadingSynopsis({ charms, houses, question }: ReadingSyn
     categoryCounts[category] = (categoryCounts[category] || 0) + 1
   })
 
-  // Find the dominant category
   let dominantCategory = ""
   let maxCount = 0
   Object.entries(categoryCounts).forEach(([category, count]) => {
@@ -63,11 +66,18 @@ export default function ReadingSynopsis({ charms, houses, question }: ReadingSyn
     }
   })
 
-  // Count rare charms
   const rareCharmCount = charms.filter((charm) => charm.rarity === "rare").length
   const mostPowerfulCombination = getMostPowerfulCombination(combinations)
 
   if (isGenerating) {
+    const loadingMessages = [
+      "Reading the cosmic patterns...",
+      "Interpreting the stellar alignments...",
+      "Consulting the astral currents...",
+      "Decoding the celestial messages...",
+      "Analyzing the cosmic convergence...",
+    ]
+
     return (
       <div className="w-full max-w-md mx-auto mt-6 px-4">
         <div className="bg-black/60 border border-white/10 rounded-lg p-4 text-center">
@@ -76,7 +86,9 @@ export default function ReadingSynopsis({ charms, houses, question }: ReadingSyn
             <div className="w-2 h-2 bg-white/70 rounded-full animate-pulse" style={{ animationDelay: "0.2s" }}></div>
             <div className="w-2 h-2 bg-white/70 rounded-full animate-pulse" style={{ animationDelay: "0.4s" }}></div>
           </div>
-          <p className="text-sm text-white/50 mt-2">Reading the cosmic patterns...</p>
+          <p className="text-sm text-white/50 mt-2">
+            {loadingMessages[Math.floor(Math.random() * loadingMessages.length)]}
+          </p>
         </div>
       </div>
     )
@@ -121,7 +133,6 @@ export default function ReadingSynopsis({ charms, houses, question }: ReadingSyn
           )}
         </div>
 
-        {/* Show combination details if present */}
         {mostPowerfulCombination && (
           <div className="mt-3 pt-3 border-t border-white/10">
             <p className="text-xs text-white/70 italic">"{mostPowerfulCombination.description}"</p>
@@ -132,26 +143,43 @@ export default function ReadingSynopsis({ charms, houses, question }: ReadingSyn
   )
 }
 
-// Enhanced synopsis generation with combination insights
-function generateSynopsis(
+// Determine reading style based on question and charm energy
+function determineReadingStyle(question: string, charms: Charm[]): "direct" | "mystical" | "practical" {
+  const rareCount = charms.filter((c) => c.rarity === "rare").length
+
+  // Mystical style for rare charms or spiritual questions
+  if (rareCount >= 2 || /\b(spirit|soul|universe|cosmic|divine|sacred)\b/i.test(question)) {
+    return "mystical"
+  }
+
+  // Practical style for work/money questions
+  if (/\b(work|job|money|career|business|practical|should i)\b/i.test(question)) {
+    return "practical"
+  }
+
+  return "direct"
+}
+
+// Generate varied synopsis with different styles and approaches
+function generateVariedSynopsis(
   charms: Charm[],
   houses: House[],
   question: string,
   combinations: ReturnType<typeof findCharmCombinations>,
+  style: "direct" | "mystical" | "practical",
 ): string {
-  // Get the most powerful combination
   const mostPowerfulCombination = getMostPowerfulCombination(combinations)
 
-  // If we have a powerful combination, lead with that
+  // If we have a powerful combination, sometimes lead with that
   if (
     mostPowerfulCombination &&
     (mostPowerfulCombination.rarity === "legendary" || mostPowerfulCombination.rarity === "rare")
   ) {
-    return mostPowerfulCombination.interpretation
+    if (Math.random() > 0.3) {
+      // 70% chance to use combination
+      return adaptCombinationToStyle(mostPowerfulCombination.interpretation, style)
+    }
   }
-
-  // Otherwise, use the original synopsis logic but incorporate combination insights
-  const questionContext = analyzeQuestion(question)
 
   // Count charms by category
   const categoryCounts: Record<string, number> = {}
@@ -160,7 +188,6 @@ function generateSynopsis(
     categoryCounts[category] = (categoryCounts[category] || 0) + 1
   })
 
-  // Find dominant category
   let dominantCategory = ""
   let maxCount = 0
   Object.entries(categoryCounts).forEach(([category, count]) => {
@@ -170,105 +197,193 @@ function generateSynopsis(
     }
   })
 
-  // Count rare charms and get their names
   const rareCharms = charms.filter((charm) => charm.rarity === "rare")
+  const questionContext = analyzeQuestion(question)
 
-  // Find specific charms for targeted insights
-  const hasFlowAndObstacle =
-    charms.some((c) => c.name === "Flow") && charms.some((c) => c.name === "Hiccup" || c.name === "Interference")
-  const hasCatalyst = charms.some((c) => c.name === "Catalyst")
-  const hasTippingPoint = charms.some((c) => c.name === "Tipping Point")
-  const hasEclipse = charms.some((c) => c.name === "Eclipse")
-  const hasSupernova = charms.some((c) => c.name === "Supernova")
-  const hasRedLight = charms.some((c) => c.name === "Red Light")
-  const hasLastCall = charms.some((c) => c.name === "Last Call")
-  const hasGutCheck = charms.some((c) => c.name === "Gut Check")
-
-  let synopsis = ""
-
-  // Start with hard-hitting reality check based on dominant energy
-  if (dominantCategory === "Challenges") {
-    synopsis += "You're in the thick of it. "
-    if (hasRedLight) {
-      synopsis += "Stop pushing—you're forcing the wrong door. "
-    } else if (hasFlowAndObstacle) {
-      synopsis += "Stop fighting the current and start swimming with it. "
-    } else {
-      synopsis += "These obstacles aren't random—they're showing you where you need to grow. "
-    }
-  } else if (dominantCategory === "Opportunities") {
-    synopsis += "The universe is handing you options. "
-    if (hasLastCall) {
-      synopsis += "This window won't stay open forever—move now or watch it close. "
-    } else if (hasCatalyst) {
-      synopsis += "One small action will trigger a chain reaction. "
-    } else {
-      synopsis += "But opportunities without action are just pretty daydreams. "
-    }
-  } else if (dominantCategory === "Transitions") {
-    synopsis += "You're shedding an old skin. "
-    if (hasEclipse) {
-      synopsis += "This transformation will redefine who you are at your core. "
-    } else if (hasSupernova) {
-      synopsis += "What's exploding needed to die anyway. "
-    } else {
-      synopsis += "Stop clinging to what's already gone. "
-    }
-  } else if (dominantCategory === "Growth") {
-    synopsis += "You're being stretched beyond your comfort zone. "
-    if (hasTippingPoint) {
-      synopsis += "You're closer to breakthrough than you realize. "
-    } else {
-      synopsis += "Embrace the discomfort—it's where real change happens. "
-    }
-  } else if (dominantCategory === "Insights") {
-    synopsis += "The answers you need are already inside you. "
-    if (hasGutCheck) {
-      synopsis += "Your instincts are screaming—listen to them. "
-    } else {
-      synopsis += "Stop looking outside for validation you can only give yourself. "
-    }
-  } else {
-    synopsis += "Your energy is scattered across multiple fronts. "
+  // Generate style-specific synopsis
+  switch (style) {
+    case "mystical":
+      return generateMysticalSynopsis(dominantCategory, rareCharms, questionContext, charms)
+    case "practical":
+      return generatePracticalSynopsis(dominantCategory, questionContext, charms)
+    default:
+      return generateDirectSynopsis(dominantCategory, questionContext, charms, mostPowerfulCombination)
   }
-
-  // Add combination insight if we have one
-  if (mostPowerfulCombination && mostPowerfulCombination.rarity === "uncommon") {
-    synopsis += mostPowerfulCombination.interpretation.split(".")[0] + ". "
-  }
-
-  // Add specific action based on question context
-  if (questionContext.topic === "career") {
-    if (dominantCategory === "Challenges") {
-      synopsis += "Your professional path is being redirected, not destroyed."
-    } else if (dominantCategory === "Opportunities") {
-      synopsis += "Network aggressively and pitch boldly—mediocrity won't cut it."
-    } else {
-      synopsis += "Your career needs the same energy you'd put into saving your life."
-    }
-  } else if (questionContext.topic === "relationships") {
-    if (dominantCategory === "Challenges") {
-      synopsis += "This relationship is mirroring your unhealed wounds."
-    } else if (dominantCategory === "Transitions") {
-      synopsis += "Someone's leaving your story—let them go gracefully."
-    } else {
-      synopsis += "Stop trying to fix people and start choosing better."
-    }
-  } else {
-    // General advice
-    if (dominantCategory === "Challenges") {
-      synopsis += "Face what you've been avoiding—it's smaller than your fear of it."
-    } else if (dominantCategory === "Opportunities") {
-      synopsis += "Say yes to what scares you and no to what drains you."
-    } else {
-      synopsis += "Stop overthinking and start doing."
-    }
-  }
-
-  return synopsis.trim()
 }
 
-// Simplified question analysis for bold readings
+function adaptCombinationToStyle(interpretation: string, style: "direct" | "mystical" | "practical"): string {
+  const sentences = interpretation.split(". ")
+  const firstSentence = sentences[0]
+
+  switch (style) {
+    case "mystical":
+      return `The cosmos speaks clearly: ${firstSentence.toLowerCase()}. ${sentences.slice(1).join(". ")}`
+    case "practical":
+      return `Here's what you need to know: ${firstSentence.toLowerCase()}. ${sentences.slice(1).join(". ")}`
+    default:
+      return interpretation
+  }
+}
+
+function generateMysticalSynopsis(
+  dominantCategory: string,
+  rareCharms: Charm[],
+  questionContext: any,
+  allCharms: Charm[],
+): string {
+  const mysticalOpeners = [
+    "The universe whispers through these charms:",
+    "Your soul's journey reveals itself:",
+    "The cosmic tapestry shows:",
+    "Ancient wisdom flows through this reading:",
+    "The stars have aligned to tell you:",
+  ]
+
+  const opener = mysticalOpeners[Math.floor(Math.random() * mysticalOpeners.length)]
+
+  let message = opener + " "
+
+  if (rareCharms.length > 0) {
+    message += `Sacred energies surround you—${rareCharms.length} rare ${rareCharms.length === 1 ? "charm has" : "charms have"} appeared to guide your path. `
+  }
+
+  switch (dominantCategory) {
+    case "Challenges":
+      message +=
+        "You're walking through the fire of transformation. These trials aren't punishments—they're initiations into your next level of being."
+      break
+    case "Opportunities":
+      message +=
+        "The universe is opening doorways for you. Trust the synchronicities and step boldly into your destiny."
+      break
+    case "Transitions":
+      message += "You're in the sacred space between who you were and who you're becoming. Honor this metamorphosis."
+      break
+    case "Growth":
+      message +=
+        "Your soul is expanding beyond its current container. Embrace the growing pains—they herald your evolution."
+      break
+    case "Insights":
+      message += "Divine wisdom seeks to illuminate your path. The answers you seek are already written in your heart."
+      break
+    default:
+      message += "Multiple energies swirl around you, creating a powerful vortex of possibility and change."
+  }
+
+  return message
+}
+
+function generatePracticalSynopsis(dominantCategory: string, questionContext: any, allCharms: Charm[]): string {
+  const practicalOpeners = [
+    "Here's the practical reality:",
+    "Bottom line:",
+    "The situation breaks down like this:",
+    "What you need to know:",
+    "The facts are:",
+  ]
+
+  const opener = practicalOpeners[Math.floor(Math.random() * practicalOpeners.length)]
+
+  let message = opener + " "
+
+  switch (dominantCategory) {
+    case "Challenges":
+      message +=
+        "You're facing obstacles that require strategic thinking. Don't just push harder—find the leverage point and work smarter."
+      break
+    case "Opportunities":
+      message +=
+        "There are real chances for advancement here, but they won't wait forever. Make your move while the window is open."
+      break
+    case "Transitions":
+      message +=
+        "Change is inevitable, so focus on managing it rather than resisting it. Plan your next steps carefully."
+      break
+    case "Growth":
+      message +=
+        "You're ready for the next level, but it requires stepping outside your comfort zone. Invest in yourself now."
+      break
+    case "Insights":
+      message += "You have more information than you think. Stop second-guessing and trust your analysis."
+      break
+    default:
+      message += "Multiple factors are at play. Prioritize what matters most and tackle issues one at a time."
+  }
+
+  // Add context-specific advice
+  if (questionContext.topic === "career") {
+    message += " Focus on building valuable skills and relationships."
+  } else if (questionContext.topic === "relationships") {
+    message += " Clear communication and boundaries are essential."
+  } else if (questionContext.topic === "financial") {
+    message += " Make decisions based on long-term value, not short-term comfort."
+  }
+
+  return message
+}
+
+function generateDirectSynopsis(
+  dominantCategory: string,
+  questionContext: any,
+  allCharms: Charm[],
+  mostPowerfulCombination: any,
+): string {
+  const directOpeners = [
+    "Your reading reveals:",
+    "The charms are telling you:",
+    "This is what's happening:",
+    "The energy shows:",
+    "Your situation indicates:",
+  ]
+
+  const opener = directOpeners[Math.floor(Math.random() * directOpeners.length)]
+
+  let message = opener + " "
+
+  // Add some variety to the core message
+  const variations = {
+    Challenges: [
+      "You're in a testing phase. These difficulties are revealing your true strength.",
+      "Resistance is showing you where growth is needed. Lean into the discomfort.",
+      "What feels like setbacks are actually course corrections guiding you toward something better.",
+    ],
+    Opportunities: [
+      "Doors are opening, but you need to walk through them. Hesitation will cost you.",
+      "The timing is right for bold moves. Trust your instincts and take action.",
+      "Multiple paths forward are available. Choose the one that excites and challenges you.",
+    ],
+    Transitions: [
+      "You're shedding an old version of yourself. Let go of what no longer serves you.",
+      "This ending is making space for a new beginning. Trust the process.",
+      "Change is accelerating around you. Adapt quickly and stay flexible.",
+    ],
+    Growth: [
+      "You're being stretched beyond your current limits. This expansion is necessary for your evolution.",
+      "Your potential is calling you forward. Answer with courage and commitment.",
+      "The next level requires a new version of you. Start becoming that person now.",
+    ],
+    Insights: [
+      "The answers you seek are already within you. Stop looking outside for validation.",
+      "Your intuition is stronger than you realize. Trust those subtle inner nudges.",
+      "Clarity is coming through reflection and honest self-assessment.",
+    ],
+  }
+
+  const categoryMessages = variations[dominantCategory as keyof typeof variations] || [
+    "Multiple energies are converging in your life. Pay attention to the patterns.",
+  ]
+
+  message += categoryMessages[Math.floor(Math.random() * categoryMessages.length)]
+
+  // Sometimes add a combination insight
+  if (mostPowerfulCombination && Math.random() > 0.6) {
+    const combinationSentence = mostPowerfulCombination.interpretation.split(".")[0]
+    message += ` ${combinationSentence}.`
+  }
+
+  return message
+}
+
 function analyzeQuestion(question: string): {
   topic: string
   urgency: "high" | "medium" | "low"
@@ -280,7 +395,6 @@ function analyzeQuestion(question: string): {
 
   const lowerQuestion = question.toLowerCase()
 
-  // Determine topic
   let topic = "general"
   if (/\b(career|job|work|business|profession)\b/.test(lowerQuestion)) {
     topic = "career"
@@ -294,7 +408,6 @@ function analyzeQuestion(question: string): {
     topic = "family"
   }
 
-  // Determine urgency
   let urgency: "high" | "medium" | "low" = "medium"
   if (/\b(urgent|emergency|crisis|desperate|help|stuck|lost)\b/.test(lowerQuestion)) {
     urgency = "high"
@@ -302,7 +415,6 @@ function analyzeQuestion(question: string): {
     urgency = "low"
   }
 
-  // Determine sentiment
   let sentiment: "positive" | "negative" | "neutral" = "neutral"
   if (/\b(problem|trouble|difficult|struggle|pain|fear|worry|bad)\b/.test(lowerQuestion)) {
     sentiment = "negative"

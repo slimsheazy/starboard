@@ -18,6 +18,7 @@ export default function AIQuestionHelper({ initialQuestion, onQuestionRefined, o
   const [isThinking, setIsThinking] = useState(false)
   const [conversation, setConversation] = useState<Array<{ role: "ai" | "user"; content: string }>>([])
   const [userInput, setUserInput] = useState("")
+  const [questionStyle, setQuestionStyle] = useState<"direct" | "exploratory" | "intuitive">("direct")
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -30,24 +31,23 @@ export default function AIQuestionHelper({ initialQuestion, onQuestionRefined, o
     scrollToBottom()
   }, [conversation])
 
-  // Determine question category and select appropriate follow-up questions
   useEffect(() => {
-    const questionCategory = determineQuestionCategory(initialQuestion)
-    const followUpQuestions = getFollowUpQuestions(questionCategory)
+    const category = determineQuestionCategory(initialQuestion)
+    const style = determineQuestionStyle(initialQuestion)
+    setQuestionStyle(style)
 
     if (initialQuestion.trim() === "") {
-      // If no initial question, just add a generic AI greeting
       setConversation([
         {
           role: "ai",
-          content: "I can help refine your question for a more accurate reading. What would you like guidance on?",
+          content: getRandomGreeting(),
         },
       ])
     } else {
-      // Start with the initial question and first follow-up from the appropriate category
+      const followUp = getContextualFollowUp(category, style, 0)
       setConversation([
         { role: "user", content: initialQuestion },
-        { role: "ai", content: followUpQuestions[0] },
+        { role: "ai", content: followUp },
       ])
     }
   }, [initialQuestion])
@@ -55,53 +55,44 @@ export default function AIQuestionHelper({ initialQuestion, onQuestionRefined, o
   const handleUserResponse = () => {
     if (!userInput.trim()) return
 
-    // Add user response to conversation
     setConversation([...conversation, { role: "user", content: userInput }])
-
-    // Clear input field
     setUserInput("")
-
-    // Simulate AI thinking
     setIsThinking(true)
 
-    // Get follow-up questions based on the initial question
-    const questionCategory = determineQuestionCategory(initialQuestion)
-    const followUpQuestions = getFollowUpQuestions(questionCategory)
+    const category = determineQuestionCategory(initialQuestion)
 
-    setTimeout(() => {
-      setIsThinking(false)
+    setTimeout(
+      () => {
+        setIsThinking(false)
 
-      // If we have more follow-up questions, ask the next one
-      if (step < followUpQuestions.length - 1) {
-        setConversation((prev) => [...prev, { role: "ai", content: followUpQuestions[step + 1] }])
-        setStep(step + 1)
-      } else {
-        // Final step - provide the refined question
-        const refinedQuestionText = generateRefinedQuestion(conversation, userInput, initialQuestion)
-        setRefinedQuestion(refinedQuestionText)
+        if (step < 2) {
+          const followUp = getContextualFollowUp(category, questionStyle, step + 1)
+          setConversation((prev) => [...prev, { role: "ai", content: followUp }])
+          setStep(step + 1)
+        } else {
+          const refinedQuestionText = generateRefinedQuestion(conversation, userInput, initialQuestion, questionStyle)
+          setRefinedQuestion(refinedQuestionText)
 
-        setConversation((prev) => [
-          ...prev,
-          {
-            role: "ai",
-            content: `Thank you for sharing. Based on our conversation, I've refined your question to: "${refinedQuestionText}" Does this capture what you're asking?`,
-          },
-        ])
-        setStep(followUpQuestions.length)
-      }
-    }, 1500)
+          setConversation((prev) => [
+            ...prev,
+            {
+              role: "ai",
+              content: getRandomConfirmation(refinedQuestionText),
+            },
+          ])
+          setStep(3)
+        }
+      },
+      1000 + Math.random() * 1000,
+    ) // Variable delay for more natural feel
   }
 
   const handleFinalConfirmation = (isAccepted: boolean) => {
     if (isAccepted) {
       onQuestionRefined(refinedQuestion)
     } else {
-      // Let the user edit the refined question
-      setConversation((prev) => [
-        ...prev,
-        { role: "ai", content: "Please edit the question to better reflect what you're seeking guidance on:" },
-      ])
-      setStep(getFollowUpQuestions("general").length + 1)
+      setConversation((prev) => [...prev, { role: "ai", content: getRandomEditPrompt() }])
+      setStep(4)
     }
   }
 
@@ -114,7 +105,128 @@ export default function AIQuestionHelper({ initialQuestion, onQuestionRefined, o
     onClose()
   }
 
-  // Determine question category based on initial question
+  // Random greetings for variety
+  const getRandomGreeting = () => {
+    const greetings = [
+      "What's weighing on your mind? I can help you focus your question for a clearer reading.",
+      "Let's explore what you're seeking guidance on. What situation would you like insight into?",
+      "I'm here to help refine your question. What area of your life needs some cosmic clarity?",
+      "What's calling for your attention right now? Share what you'd like to understand better.",
+      "Tell me what's on your heart. I'll help you ask the right question for your reading.",
+    ]
+    return greetings[Math.floor(Math.random() * greetings.length)]
+  }
+
+  // Random confirmation messages
+  const getRandomConfirmation = (question: string) => {
+    const confirmations = [
+      `I've refined your question to: "${question}" Does this capture what you're seeking?`,
+      `Here's a focused version: "${question}" Does this feel right to you?`,
+      `I've distilled your question to: "${question}" Is this what you want to explore?`,
+      `Your refined question: "${question}" Does this resonate with your intention?`,
+      `I've crafted this for you: "${question}" Does it align with what you're asking?`,
+    ]
+    return confirmations[Math.floor(Math.random() * confirmations.length)]
+  }
+
+  // Random edit prompts
+  const getRandomEditPrompt = () => {
+    const prompts = [
+      "No worries! Please adjust the question to better reflect what you're seeking:",
+      "Let's refine it further. Edit the question to match your true intention:",
+      "I understand. Please modify the question to capture what you really want to know:",
+      "Of course! Please reshape the question to better serve your needs:",
+      "Absolutely. Please rewrite the question in your own words:",
+    ]
+    return prompts[Math.floor(Math.random() * prompts.length)]
+  }
+
+  // Determine question style for more personalized responses
+  function determineQuestionStyle(question: string): "direct" | "exploratory" | "intuitive" {
+    if (!question.trim()) return "exploratory"
+
+    const lowerQuestion = question.toLowerCase()
+
+    // Direct style - specific, action-oriented questions
+    if (/\b(should i|will i|when will|how do i|what should|can i)\b/.test(lowerQuestion)) {
+      return "direct"
+    }
+
+    // Intuitive style - feeling-based, emotional questions
+    if (/\b(feel|heart|soul|spirit|energy|vibe|sense|intuition)\b/.test(lowerQuestion)) {
+      return "intuitive"
+    }
+
+    // Default to exploratory
+    return "exploratory"
+  }
+
+  // More varied and contextual follow-up questions
+  function getContextualFollowUp(
+    category: string,
+    style: "direct" | "exploratory" | "intuitive",
+    stepIndex: number,
+  ): string {
+    const followUps: Record<string, Record<string, string[]>> = {
+      career: {
+        direct: [
+          "What specific outcome are you hoping to achieve in your career?",
+          "What's the main obstacle you're facing in your professional life?",
+          "What would success look like for you in this situation?",
+        ],
+        exploratory: [
+          "What aspects of your work life feel most uncertain right now?",
+          "How is this career situation affecting other areas of your life?",
+          "What patterns do you notice in your professional relationships?",
+        ],
+        intuitive: [
+          "What does your gut tell you about this career path?",
+          "How does this work situation make you feel in your body?",
+          "What would your ideal work environment feel like?",
+        ],
+      },
+      relationships: {
+        direct: [
+          "What specific change do you want to see in this relationship?",
+          "What's the main challenge you're facing with this person?",
+          "What outcome would feel most healing for you?",
+        ],
+        exploratory: [
+          "What patterns keep showing up in your relationships?",
+          "How has this relationship dynamic affected your sense of self?",
+          "What role do you play in this relationship pattern?",
+        ],
+        intuitive: [
+          "What does your heart know about this connection?",
+          "How does this relationship feel in your energy field?",
+          "What is this relationship teaching you about yourself?",
+        ],
+      },
+      general: {
+        direct: [
+          "What specific guidance would be most helpful right now?",
+          "What decision or action are you contemplating?",
+          "What outcome are you hoping to understand better?",
+        ],
+        exploratory: [
+          "What themes or patterns are you noticing in your life?",
+          "How is this situation connected to your larger life journey?",
+          "What aspects of this situation feel most unclear?",
+        ],
+        intuitive: [
+          "What is your inner wisdom telling you about this?",
+          "How does this situation resonate in your heart space?",
+          "What feels most important for your soul's growth right now?",
+        ],
+      },
+    }
+
+    const categoryQuestions = followUps[category] || followUps.general
+    const styleQuestions = categoryQuestions[style]
+
+    return styleQuestions[stepIndex] || styleQuestions[0]
+  }
+
   function determineQuestionCategory(question: string): string {
     if (!question.trim()) return "general"
 
@@ -123,142 +235,60 @@ export default function AIQuestionHelper({ initialQuestion, onQuestionRefined, o
     if (/\b(career|job|work|business|profession|employment)\b/.test(lowerQuestion)) {
       return "career"
     }
-
     if (/\b(love|relationship|partner|marriage|dating|romance)\b/.test(lowerQuestion)) {
       return "relationships"
     }
-
     if (/\b(money|finance|wealth|income|debt|investment)\b/.test(lowerQuestion)) {
       return "financial"
     }
-
-    if (/\b(health|wellness|illness|medical|fitness|diet)\b/.test(lowerQuestion)) {
+    if (/\b(health|wellness|illness|medical|fitness)\b/.test(lowerQuestion)) {
       return "health"
     }
-
-    if (/\b(family|home|parent|child|house|domestic)\b/.test(lowerQuestion)) {
+    if (/\b(family|home|parent|child|house)\b/.test(lowerQuestion)) {
       return "family"
     }
-
     if (/\b(spirit|soul|meaning|purpose|faith|belief)\b/.test(lowerQuestion)) {
       return "spiritual"
-    }
-
-    if (/\b(decision|choice|choose|option|path|direction)\b/.test(lowerQuestion)) {
-      return "decision"
-    }
-
-    if (/\b(change|transition|transform|shift|move|new)\b/.test(lowerQuestion)) {
-      return "change"
     }
 
     return "general"
   }
 
-  // Get follow-up questions based on category
-  function getFollowUpQuestions(category: string): string[] {
-    const categoryQuestions: Record<string, string[]> = {
-      career: [
-        "What specific aspect of your career are you concerned about?",
-        "Are you considering a change, advancement, or resolving a workplace issue?",
-        "What would an ideal outcome look like in this situation?",
-      ],
-      relationships: [
-        "Is this about a current relationship, a potential one, or healing from a past connection?",
-        "What emotions are most present when thinking about this relationship?",
-        "What would a positive resolution look like for you?",
-      ],
-      financial: [
-        "Is this about current financial challenges, future planning, or a specific decision?",
-        "What would financial success look like for you right now?",
-        "How does this financial matter connect to your broader goals?",
-      ],
-      health: [
-        "Is this related to physical health, mental wellbeing, or both?",
-        "What improvements are you hoping to see?",
-        "How has this health concern been affecting other areas of your life?",
-      ],
-      family: [
-        "Which family relationships are most relevant to your question?",
-        "What dynamics or patterns are you noticing in these relationships?",
-        "What would an ideal family situation look like for you?",
-      ],
-      spiritual: [
-        "What aspects of your spiritual journey are you focused on right now?",
-        "Are you seeking deeper meaning, connection, or specific insights?",
-        "How does your spiritual path relate to your daily life?",
-      ],
-      decision: [
-        "What options are you considering?",
-        "What factors feel most important in making this decision?",
-        "What's holding you back from choosing one path?",
-      ],
-      change: [
-        "Is this change something you're initiating or responding to?",
-        "What aspects of this transition feel most challenging?",
-        "What would successful navigation of this change look like?",
-      ],
-      general: [
-        "Could you share more about what specific aspect you're seeking guidance on?",
-        "Is there a particular timeframe or event that's relevant to your question?",
-        "What would be most helpful for you to learn from this reading?",
-      ],
-    }
-
-    return categoryQuestions[category] || categoryQuestions.general
-  }
-
-  // Improved function to generate a refined question
   function generateRefinedQuestion(
     convo: Array<{ role: "ai" | "user"; content: string }>,
     finalResponse: string,
     originalQuestion: string,
+    style: "direct" | "exploratory" | "intuitive",
   ): string {
-    // Get all user responses
     const userResponses = convo
       .filter((msg) => msg.role === "user")
       .map((msg) => msg.content)
       .concat(finalResponse)
 
-    // If we only have the initial question, return it with minor improvements
     if (userResponses.length <= 1 || !originalQuestion) {
-      return improveQuestion(originalQuestion || finalResponse)
+      return improveQuestion(originalQuestion || finalResponse, style)
     }
 
-    // Extract key insights from follow-up responses
     const insights = extractKeyInsights(userResponses.slice(1))
-
-    // If no meaningful insights found, improve the original question
     if (insights.length === 0) {
-      return improveQuestion(originalQuestion)
+      return improveQuestion(originalQuestion, style)
     }
 
-    // Construct the refined question
-    return constructRefinedQuestion(originalQuestion, insights[0])
+    return constructRefinedQuestion(originalQuestion, insights[0], style)
   }
 
-  // Extract key insights from user responses
   function extractKeyInsights(responses: string[]): string[] {
     const insights: string[] = []
 
-    // Process each response
     for (const response of responses) {
       if (!response || response.length < 5) continue
+      if (/^(yes|no|maybe|not sure|i think so|i guess)$/i.test(response.trim())) continue
 
-      // Skip common filler responses
-      if (/^(yes|no|maybe|not sure|i think so|i guess)$/i.test(response.trim())) {
-        continue
-      }
-
-      // Split into sentences and filter out short ones
       const sentences = response.split(/[.!?]+/).filter((s) => s.trim().length > 10)
-
       if (sentences.length > 0) {
-        // Sort by length (assuming longer sentences have more information)
         sentences.sort((a, b) => b.length - a.length)
         insights.push(sentences[0].trim())
       } else if (response.length > 10) {
-        // If no good sentences, use the whole response if it's substantial
         insights.push(response.trim())
       }
     }
@@ -266,65 +296,70 @@ export default function AIQuestionHelper({ initialQuestion, onQuestionRefined, o
     return insights
   }
 
-  // Improve a question with better phrasing
-  function improveQuestion(question: string): string {
+  function improveQuestion(question: string, style: "direct" | "exploratory" | "intuitive"): string {
     if (!question) return "What guidance do I need right now?"
 
     const q = question.trim()
-
-    // Already ends with question mark
     if (q.endsWith("?")) return q
 
-    // Convert statement to question if needed
-    if (/^i am|^i'm/i.test(q)) {
-      return `How can I navigate my situation where ${q.replace(/^i am |^i'm /i, "")}?`
-    }
+    // Style-specific improvements
+    switch (style) {
+      case "direct":
+        if (/^i want|^i need/i.test(q)) {
+          return `How can I ${q.replace(/^i want to |^i want |^i need to |^i need /i, "")}?`
+        }
+        return `${q}?`
 
-    if (/^i want|^i need/i.test(q)) {
-      return `How can I achieve my goal to ${q.replace(/^i want to |^i want |^i need to |^i need /i, "")}?`
-    }
+      case "intuitive":
+        if (/^i feel/i.test(q)) {
+          return `What guidance can help me understand my feelings about ${q.replace(/^i feel |^i'm feeling /i, "")}?`
+        }
+        return `What does my inner wisdom need to know about ${q}?`
 
-    if (/^i feel/i.test(q)) {
-      return `What guidance can I receive about my feelings of ${q.replace(/^i feel |^i'm feeling /i, "")}?`
-    }
+      case "exploratory":
+        return `What patterns and insights can help me understand ${q}?`
 
-    // Add question mark to statements
-    if (!q.includes("?")) {
-      return `${q}?`
+      default:
+        return `${q}?`
     }
-
-    return q
   }
 
-  // Construct a refined question combining original question and new insights
-  function constructRefinedQuestion(originalQuestion: string, insight: string): string {
+  function constructRefinedQuestion(
+    originalQuestion: string,
+    insight: string,
+    style: "direct" | "exploratory" | "intuitive",
+  ): string {
     const original = originalQuestion.trim()
 
-    // Handle empty original question
     if (!original) {
-      return `What guidance can I receive about ${insight}?`
+      switch (style) {
+        case "direct":
+          return `What specific guidance can help me with ${insight}?`
+        case "intuitive":
+          return `What does my heart need to know about ${insight}?`
+        case "exploratory":
+          return `What deeper understanding can I gain about ${insight}?`
+      }
     }
 
-    // If original already ends with question mark
     if (original.endsWith("?")) {
-      // Find where to insert the insight
       const insertPoint = original.lastIndexOf("?")
-
-      // Check if the insight is already part of the question
       if (original.toLowerCase().includes(insight.toLowerCase())) {
         return original
       }
-
       return original.substring(0, insertPoint) + ` regarding ${insight}` + original.substring(insertPoint)
     }
 
-    // If original doesn't have question words, convert to question
-    if (!/(how|what|why|when|where|who|will|should|could|can|do|does|is|are)/i.test(original)) {
-      return `What guidance can I receive about ${original} specifically regarding ${insight}?`
+    switch (style) {
+      case "direct":
+        return `${original} - specifically, how can I navigate ${insight}?`
+      case "intuitive":
+        return `${original} - what does my intuition need to know about ${insight}?`
+      case "exploratory":
+        return `${original} - what deeper patterns can I understand about ${insight}?`
+      default:
+        return `${original} regarding ${insight}?`
     }
-
-    // Add insight and question mark
-    return `${original} specifically regarding ${insight}?`
   }
 
   return (
@@ -393,7 +428,7 @@ export default function AIQuestionHelper({ initialQuestion, onQuestionRefined, o
         </div>
 
         <div className="mt-auto">
-          {step < getFollowUpQuestions("general").length && !isThinking && (
+          {step < 3 && !isThinking && (
             <div className="space-y-2">
               <Textarea
                 ref={textareaRef}
@@ -422,7 +457,7 @@ export default function AIQuestionHelper({ initialQuestion, onQuestionRefined, o
             </div>
           )}
 
-          {step === getFollowUpQuestions("general").length && !isThinking && (
+          {step === 3 && !isThinking && (
             <div className="space-y-3">
               <div className="flex justify-between gap-2">
                 <button
@@ -435,7 +470,7 @@ export default function AIQuestionHelper({ initialQuestion, onQuestionRefined, o
                   onClick={() => handleFinalConfirmation(true)}
                   className="flex-1 px-4 py-2 bg-neon-pink/30 border border-neon-pink rounded-lg text-sm text-white hover:bg-neon-pink/40"
                 >
-                  Accept
+                  Perfect
                 </button>
               </div>
               <button onClick={handleSkip} className="w-full px-4 py-2 text-sm text-white/70 hover:text-white">
@@ -444,7 +479,7 @@ export default function AIQuestionHelper({ initialQuestion, onQuestionRefined, o
             </div>
           )}
 
-          {step > getFollowUpQuestions("general").length && !isThinking && (
+          {step === 4 && !isThinking && (
             <div className="space-y-3">
               <Textarea
                 value={refinedQuestion}
@@ -459,7 +494,7 @@ export default function AIQuestionHelper({ initialQuestion, onQuestionRefined, o
                   onClick={handleManualEdit}
                   className="px-4 py-2 bg-neon-pink/30 border border-neon-pink rounded-lg text-sm text-white hover:bg-neon-pink/40"
                 >
-                  Confirm
+                  Use This
                 </button>
               </div>
             </div>
