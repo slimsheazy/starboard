@@ -13,6 +13,14 @@ interface CharmBoardProps {
   houses: House[]
 }
 
+interface CharmPosition {
+  x: number
+  y: number
+  houseNumber: number
+  houseName: string
+  houseKeyword: string
+}
+
 // Function to get a cosmic color based on charm name
 const getCosmicColor = (charmName: string): string => {
   // Use the first character code to determine color
@@ -31,8 +39,8 @@ const getCosmicColor = (charmName: string): string => {
 }
 
 export default function CharmBoard({ charms, houses }: CharmBoardProps) {
-  const [positions, setPositions] = useState<{ x: number; y: number }[]>([])
-  const [selectedCharm, setSelectedCharm] = useState<Charm | null>(null)
+  const [positions, setPositions] = useState<CharmPosition[]>([])
+  const [selectedCharm, setSelectedCharm] = useState<{ charm: Charm; position: CharmPosition } | null>(null)
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const [animationStates, setAnimationStates] = useState<string[]>([])
 
@@ -43,6 +51,7 @@ export default function CharmBoard({ charms, houses }: CharmBoardProps) {
     const newPositions = charms.map((_, index) => {
       // Each charm is assigned to a house (12 charms, 12 houses)
       const houseIndex = index % houses.length
+      const house = houses[houseIndex]
 
       // Calculate angle based on house position (counterclockwise from left)
       const angle = 180 + houseIndex * -30 // Start at left (180 degrees) and go counterclockwise
@@ -58,7 +67,13 @@ export default function CharmBoard({ charms, houses }: CharmBoardProps) {
       const x = 50 + randomRadius * Math.cos(finalRadians)
       const y = 50 + randomRadius * Math.sin(finalRadians)
 
-      return { x, y }
+      return {
+        x,
+        y,
+        houseNumber: house.number,
+        houseName: house.name,
+        houseKeyword: house.contextKeyword || house.keyword,
+      }
     })
 
     setPositions(newPositions)
@@ -71,13 +86,13 @@ export default function CharmBoard({ charms, houses }: CharmBoardProps) {
     setAnimationStates(newAnimationStates)
   }, [charms, houses])
 
-  const handleCharmClick = (charm: Charm, x: number, y: number, event: React.MouseEvent) => {
+  const handleCharmClick = (charm: Charm, position: CharmPosition, event: React.MouseEvent) => {
     // Get the position relative to the viewport for the tooltip
     const rect = event.currentTarget.getBoundingClientRect()
     const viewportX = rect.left + window.scrollX
     const viewportY = rect.top + window.scrollY
 
-    setSelectedCharm(charm)
+    setSelectedCharm({ charm, position })
     setTooltipPosition({ x: viewportX, y: viewportY })
 
     // Trigger glitch sound effect
@@ -135,7 +150,7 @@ export default function CharmBoard({ charms, houses }: CharmBoardProps) {
               left: `${positions[index].x}%`,
               top: `${positions[index].y}%`,
             }}
-            onClick={(e) => handleCharmClick(charm, positions[index].x, positions[index].y, e)}
+            onClick={(e) => handleCharmClick(charm, positions[index], e)}
           >
             <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
               <div
@@ -166,7 +181,14 @@ export default function CharmBoard({ charms, houses }: CharmBoardProps) {
         )
       })}
 
-      {selectedCharm && <CharmTooltip charm={selectedCharm} position={tooltipPosition} onClose={closeTooltip} />}
+      {selectedCharm && (
+        <CharmTooltip
+          charm={selectedCharm.charm}
+          position={tooltipPosition}
+          houseInfo={selectedCharm.position}
+          onClose={closeTooltip}
+        />
+      )}
     </div>
   )
 }

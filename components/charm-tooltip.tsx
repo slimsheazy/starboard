@@ -9,6 +9,11 @@ import { CloseIcon } from "./cosmic-icons"
 interface CharmTooltipProps {
   charm: Charm
   position: { x: number; y: number }
+  houseInfo: {
+    houseNumber: number
+    houseName: string
+    houseKeyword: string
+  }
   onClose: () => void
 }
 
@@ -40,7 +45,7 @@ const getCategory = (charmName: string): string => {
   return "Insights"
 }
 
-export function CharmTooltip({ charm, position, onClose }: CharmTooltipProps) {
+export function CharmTooltip({ charm, position, houseInfo, onClose }: CharmTooltipProps) {
   const tooltipRef = useRef<HTMLDivElement>(null)
   const CharmIcon = getCharmIcon(charm.name)
 
@@ -67,8 +72,8 @@ export function CharmTooltip({ charm, position, onClose }: CharmTooltipProps) {
 
   // Adjust position to ensure tooltip is visible in viewport
   const adjustedPosition = {
-    x: Math.min(position.x, window.innerWidth - 280),
-    y: Math.min(position.y, window.innerHeight - 200),
+    x: Math.min(position.x, window.innerWidth - 300),
+    y: Math.min(position.y, window.innerHeight - 250),
   }
 
   return (
@@ -77,7 +82,7 @@ export function CharmTooltip({ charm, position, onClose }: CharmTooltipProps) {
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
-      className="fixed z-50 w-64 bg-black/90 border-2 border-white/20 rounded-lg shadow-lg p-4"
+      className="fixed z-50 w-72 bg-black/90 border-2 border-white/20 rounded-lg shadow-lg p-4"
       style={{
         left: adjustedPosition.x,
         top: adjustedPosition.y,
@@ -85,7 +90,7 @@ export function CharmTooltip({ charm, position, onClose }: CharmTooltipProps) {
       }}
     >
       <button onClick={onClose} className="absolute top-2 right-2 text-white/60 hover:text-white">
-        <CloseIcon size={16} />
+        <CloseIcon className="w-4 h-4" />
       </button>
 
       <div className="flex flex-col items-center">
@@ -107,16 +112,24 @@ export function CharmTooltip({ charm, position, onClose }: CharmTooltipProps) {
             </div>
           )}
         </div>
+
         <h3 className="text-lg font-medium text-white mb-1">{charm.name}</h3>
-        <div className="text-xs mb-1">
-          <span className="px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: cosmicColor }}>
+
+        <div className="flex items-center gap-2 mb-2">
+          <span className="px-2 py-0.5 rounded-full text-xs text-white" style={{ backgroundColor: cosmicColor }}>
             {category}
           </span>
+          {isRare && <span className="px-2 py-0.5 rounded-full text-xs bg-yellow-600 text-white">✧ Rare ✧</span>}
         </div>
-        <div className="text-xs text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.7)] mb-3">
-          {isRare ? "✧ Rare Charm ✧" : "Charm"}
+
+        <div className="text-center mb-3">
+          <div className="text-sm text-white/90 font-medium">
+            House {houseInfo.houseNumber}: {houseInfo.houseKeyword}
+          </div>
+          <div className="text-xs text-white/60">{houseInfo.houseName}</div>
         </div>
-        <p className="text-sm text-white/80 text-center">{charm.description}</p>
+
+        <p className="text-sm text-white/80 text-center leading-relaxed">{charm.description}</p>
       </div>
     </motion.div>
   )

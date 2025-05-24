@@ -9,7 +9,6 @@ import CharmBoard from "@/components/charm-board"
 import ReadingSynopsis from "@/components/reading-synopsis"
 import SavedReadings from "@/components/saved-readings"
 import BottomNav from "@/components/bottom-nav"
-import SoundTest from "@/components/sound-test"
 import AIQuestionHelper from "@/components/ai-question-helper"
 import { triggerFlintStrike, triggerGlitch, triggerWhisper } from "@/components/sound-effects"
 import useShakeDetection from "@/hooks/use-shake-detection"
@@ -182,7 +181,6 @@ export default function Home() {
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-black text-white overflow-hidden pb-20">
       <StarBackground />
-      <SoundTest />
 
       <h1 className="text-2xl font-extralight tracking-widest mb-6 z-10">starboard</h1>
 
