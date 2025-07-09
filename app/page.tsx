@@ -9,7 +9,6 @@ import CharmBoard from "@/components/charm-board"
 import ReadingSynopsis from "@/components/reading-synopsis"
 import SavedReadings from "@/components/saved-readings"
 import BottomNav from "@/components/bottom-nav"
-import AIQuestionHelper from "@/components/ai-question-helper"
 import { triggerFlintStrike, triggerGlitch, triggerWhisper } from "@/components/sound-effects"
 import useShakeDetection from "@/hooks/use-shake-detection"
 import type { Charm, House, SavedReading } from "@/lib/types"
@@ -29,7 +28,6 @@ export default function Home() {
   const [savedReadings, setSavedReadings] = useState<SavedReading[]>([])
   const [showSavedReadings, setShowSavedReadings] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null)
-  const [showAIHelper, setShowAIHelper] = useState(false)
 
   // Load saved readings from localStorage on initial render
   useEffect(() => {
@@ -64,7 +62,7 @@ export default function Home() {
 
   // Handle shake detection
   const onShake = () => {
-    if (!hasShaken && !showAIHelper) {
+    if (!hasShaken) {
       castCharms()
       setHasShaken(true)
     }
@@ -73,12 +71,6 @@ export default function Home() {
   useShakeDetection(onShake, true)
 
   const castCharms = () => {
-    // If question is entered but not refined, show AI helper
-    if (question.trim() && !isReading && !showAIHelper) {
-      setShowAIHelper(true)
-      return
-    }
-
     // Play sound effect
     triggerGlitch()
 
@@ -103,14 +95,6 @@ export default function Home() {
     setSelectedCharms([])
     setIsReading(false)
     setHasShaken(false)
-  }
-
-  // Handle refined question from AI helper
-  const handleRefinedQuestion = (refinedQuestion: string) => {
-    setQuestion(refinedQuestion)
-    setShowAIHelper(false)
-    // Cast charms with the refined question
-    castCharms()
   }
 
   // Save the current reading
@@ -273,20 +257,6 @@ export default function Home() {
               </button>
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* AI Question Helper */}
-      <AnimatePresence>
-        {showAIHelper && (
-          <AIQuestionHelper
-            initialQuestion={question}
-            onQuestionRefined={handleRefinedQuestion}
-            onClose={() => {
-              setShowAIHelper(false)
-              castCharms()
-            }}
-          />
         )}
       </AnimatePresence>
 
