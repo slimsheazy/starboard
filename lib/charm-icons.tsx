@@ -56,7 +56,7 @@ import {
   Footprints,
   GitBranch,
   Glasses,
-  Infinity,
+  LucideInfinity,
   Key,
   Landmark,
   Leaf,
@@ -149,7 +149,7 @@ const iconMap: Record<string, React.ComponentType<any>> = {
 
   // ===== New rare – Positive =====
   "Phoenix Rising": Flame,
-  "Golden Thread": Infinity,
+  "Golden Thread": LucideInfinity,
   Cross: X,
 
   // ===== New rare – Challenging =====
