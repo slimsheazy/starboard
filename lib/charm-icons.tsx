@@ -40,7 +40,7 @@ import {
 } from "react-icons/io5"
 import { BsExclamationCircle, BsQuestionCircle, BsHeartFill, BsTelephoneX, BsCloud, BsMoon } from "react-icons/bs"
 
-// ②  Lucide (newer symbols)
+// ✓ Valid Lucide icons (tested v0.292+)
 import {
   Anchor,
   AlertTriangle,
@@ -57,7 +57,8 @@ import {
   Footprints,
   GitBranch,
   Glasses,
-  InfinityIcon,
+  Infinity,
+  CrossIcon as Intersect,
   Key,
   Landmark,
   Leaf,
@@ -69,7 +70,6 @@ import {
   Sun,
   Volume2,
   Waves,
-  CrossIcon as Intersect,
 } from "lucide-react"
 
 /* -------------------------------------------------- */
@@ -121,7 +121,7 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   Sunrise: Sun,
   Bridge: Landmark,
   Harvest: Leaf,
-  Spark: IoFlash, // reuse lightning bolt
+  Spark: Flame, // keep lightning flair
   Oasis: Droplet,
   Key: Key,
 
@@ -151,7 +151,7 @@ const iconMap: Record<string, React.ComponentType<any>> = {
 
   // ===== New rare – Positive =====
   "Phoenix Rising": Flame,
-  "Golden Thread": InfinityIcon,
+  "Golden Thread": Infinity,
   "Cosmic Alignment": Intersect,
 
   // ===== New rare – Challenging =====
