@@ -9,6 +9,7 @@ import CharmBoard from "@/components/charm-board"
 import ReadingSynopsis from "@/components/reading-synopsis"
 import SavedReadings from "@/components/saved-readings"
 import BottomNav from "@/components/bottom-nav"
+import LuckySpinWheel from "@/components/lucky-spin-wheel"
 import { triggerFlintStrike, triggerGlitch, triggerWhisper } from "@/components/sound-effects"
 import useShakeDetection from "@/hooks/use-shake-detection"
 import type { Charm, House, SavedReading } from "@/lib/types"
@@ -28,6 +29,7 @@ export default function Home() {
   const [savedReadings, setSavedReadings] = useState<SavedReading[]>([])
   const [showSavedReadings, setShowSavedReadings] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null)
+  const [showSpinWheel, setShowSpinWheel] = useState(false)
 
   // Load saved readings from localStorage on initial render
   useEffect(() => {
@@ -162,6 +164,12 @@ export default function Home() {
     setShowSavedReadings(!showSavedReadings)
   }
 
+  // Toggle spin wheel
+  const toggleSpinWheel = () => {
+    triggerWhisper()
+    setShowSpinWheel(!showSpinWheel)
+  }
+
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-black text-white overflow-hidden pb-20">
       <StarBackground />
@@ -169,7 +177,9 @@ export default function Home() {
       <h1 className="text-2xl font-extralight tracking-widest mb-6 z-10">starboard</h1>
 
       <AnimatePresence mode="wait">
-        {!isReading && !showSavedReadings ? (
+        {showSpinWheel ? (
+          <LuckySpinWheel onClose={() => setShowSpinWheel(false)} />
+        ) : !isReading && !showSavedReadings ? (
           <motion.div
             key="input"
             initial={{ opacity: 0 }}
@@ -181,12 +191,18 @@ export default function Home() {
 
             <div className="mt-8 text-center text-sm text-white/70">
               <p>Shake your device to cast the charms</p>
-              <div className="flex justify-center mt-4">
+              <div className="flex justify-center gap-4 mt-4">
                 <button
                   onClick={castCharms}
                   className="px-6 py-2 rounded-full text-sm transition-colors cosmic-glow bg-black/30 border-2 border-neon-pink sound-trigger"
                 >
                   cast charms
+                </button>
+                <button
+                  onClick={toggleSpinWheel}
+                  className="px-6 py-2 rounded-full text-sm transition-colors bg-black/30 border-2 border-acid-green hover:bg-acid-green/10 sound-trigger"
+                >
+                  lucky spin
                 </button>
               </div>
             </div>

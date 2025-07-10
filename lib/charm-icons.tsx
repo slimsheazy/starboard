@@ -1,6 +1,14 @@
-import type React from "react"
-import { BsExclamationCircle, BsQuestionCircle, BsHeartFill, BsTelephoneX, BsCloud, BsMoon } from "react-icons/bs"
+/**
+ * Charm-to-icon lookup table.
+ * --------------------------------------------------
+ * • Legacy charms  → IonIcons (react-icons/io5)  ✅
+ * • New 2025 charms → Lucide icons               ✅
+ * • Any unmapped charm falls back to a “?” glyph.
+ */
 
+import type React from "react"
+
+// ①  IonIcons (existing symbols)
 import {
   IoColorPalette,
   IoFlash,
@@ -28,10 +36,48 @@ import {
   IoTrendingUp,
   IoWarningOutline,
   IoDocument,
+  IoEyeOff, // Added for IoEyeOff
 } from "react-icons/io5"
+import { BsExclamationCircle, BsQuestionCircle, BsHeartFill, BsTelephoneX, BsCloud, BsMoon } from "react-icons/bs"
 
-// Map charm names to React Icons
+// ②  Lucide (newer symbols)
+import {
+  Anchor,
+  AlertTriangle,
+  ArrowLeftRight,
+  Atom,
+  Ban,
+  FlowerIcon as Butterfly,
+  CheckCircle,
+  Circle,
+  Compass,
+  CornerDownRight,
+  Droplet,
+  Flame,
+  Footprints,
+  GitBranch,
+  Glasses,
+  InfinityIcon,
+  Key,
+  Landmark,
+  Leaf,
+  Pause,
+  Play,
+  RainbowIcon as Prism,
+  RotateCcw,
+  Shuffle,
+  Sun,
+  Volume2,
+  Waves,
+  CrossIcon as Intersect,
+} from "lucide-react"
+
+/* -------------------------------------------------- */
+/*  Icon map                                          */
+/* -------------------------------------------------- */
+
 const iconMap: Record<string, React.ComponentType<any>> = {
+  // ===== Legacy charms (unchanged) =====
   Flow: IoTrendingUp,
   Catalyst: IoFlash,
   Detour: IoMap,
@@ -66,12 +112,61 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   Wormhole: IoSparkles,
   "Quantum Leap": IoRocket,
   Stargate: IoPlanet,
+
+  // ===== New common – Positive =====
+  "Green Light": CheckCircle,
+  Breakthrough: Play,
+  Anchor: Anchor,
+  Compass: Compass,
+  Sunrise: Sun,
+  Bridge: Landmark,
+  Harvest: Leaf,
+  Spark: IoFlash, // reuse lightning bolt
+  Oasis: Droplet,
+  Key: Key,
+
+  // ===== New common – Challenging =====
+  Crossroads: GitBranch,
+  "Storm Warning": AlertTriangle,
+  Quicksand: Footprints,
+  Echo: Volume2,
+  Mask: IoEye, // show an eye for “mask”
+  Leak: Droplet,
+  Shadow: IoEyeOff, // fallback to crossed-eye
+  Friction: Flame,
+  Mirage: Glasses,
+  Undertow: Waves,
+
+  // ===== New common – Neutral =====
+  Pause: Pause,
+  Shuffle: Shuffle,
+  Pendulum: ArrowLeftRight,
+  Threshold: CornerDownRight,
+  Tide: Waves,
+  Prism: Prism,
+  Spiral: RotateCcw,
+  Metamorphosis: Butterfly,
+  "Compass Rose": Compass,
+  Hourglass: IoHourglass,
+
+  // ===== New rare – Positive =====
+  "Phoenix Rising": Flame,
+  "Golden Thread": InfinityIcon,
+  "Cosmic Alignment": Intersect,
+
+  // ===== New rare – Challenging =====
+  "Dark Night": BsMoon,
+  Void: Circle,
+  "Shattered Mirror": Ban,
+
+  // ===== New rare – Neutral/Transformative =====
+  Ouroboros: RotateCcw,
+  Singularity: Atom,
 }
 
-// Fallback icon for charms without a specific icon
+// Generic fallback
 const FallbackIcon = BsQuestionCircle
 
-// Function to get the icon component for a charm
 export function getCharmIcon(charmName: string): React.ComponentType<any> {
   return iconMap[charmName] || FallbackIcon
 }

@@ -4,7 +4,7 @@ import type React from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { HomeIcon, BookIcon, StarIcon, MoonIcon } from "./cosmic-icons"
+import { HomeIcon, BookIcon, StarIcon, MoonIcon, User } from "./cosmic-icons"
 import { triggerWhisper } from "./sound-effects"
 
 interface BottomNavProps {
@@ -45,6 +45,10 @@ export default function BottomNav({ onOpenSavedReadings, savedReadingsCount }: B
 
             <Link href="/charms" onClick={() => triggerWhisper()}>
               <NavButton icon={<StarIcon className="w-6 h-6" />} label="Charms" isActive={pathname === "/charms"} />
+            </Link>
+
+            <Link href="/profile" onClick={() => triggerWhisper()}>
+              <NavButton icon={<User className="w-6 h-6" />} label="Profile" isActive={pathname === "/profile"} />
             </Link>
 
             <Link href="/about" onClick={() => triggerWhisper()}>
