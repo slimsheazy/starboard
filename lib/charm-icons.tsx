@@ -121,7 +121,7 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   Sunrise: Sun,
   Bridge: Landmark,
   Harvest: Leaf,
-  Spark: Flame, // keep lightning flair
+  Spark: Flame, // fiery spark feel
   Oasis: Droplet,
   Key: Key,
 
