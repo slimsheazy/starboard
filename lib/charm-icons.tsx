@@ -3,7 +3,7 @@
  * --------------------------------------------------
  * • Legacy charms  → IonIcons (react-icons/io5)  ✅
  * • New 2025 charms → Lucide icons               ✅
- * • Any unmapped charm falls back to a “?” glyph.
+ * • Any unmapped charm falls back to a "?" glyph.
  */
 
 import type React from "react"
@@ -36,7 +36,7 @@ import {
   IoTrendingUp,
   IoWarningOutline,
   IoDocument,
-  IoEyeOff, // Added for IoEyeOff
+  IoEyeOff,
 } from "react-icons/io5"
 import { BsExclamationCircle, BsQuestionCircle, BsHeartFill, BsTelephoneX, BsCloud, BsMoon } from "react-icons/bs"
 
@@ -47,7 +47,6 @@ import {
   ArrowLeftRight,
   Atom,
   Ban,
-  FlowerIcon as Butterfly,
   CheckCircle,
   Circle,
   Compass,
@@ -58,18 +57,17 @@ import {
   GitBranch,
   Glasses,
   Infinity,
-  CrossIcon as Intersect,
   Key,
   Landmark,
   Leaf,
   Pause,
   Play,
-  RainbowIcon as Prism,
   RotateCcw,
   Shuffle,
   Sun,
   Volume2,
   Waves,
+  X,
 } from "lucide-react"
 
 /* -------------------------------------------------- */
@@ -121,7 +119,7 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   Sunrise: Sun,
   Bridge: Landmark,
   Harvest: Leaf,
-  Spark: Flame, // fiery spark feel
+  Spark: Flame,
   Oasis: Droplet,
   Key: Key,
 
@@ -130,9 +128,9 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   "Storm Warning": AlertTriangle,
   Quicksand: Footprints,
   Echo: Volume2,
-  Mask: IoEye, // show an eye for “mask”
+  Mask: IoEye,
   Leak: Droplet,
-  Shadow: IoEyeOff, // fallback to crossed-eye
+  Shadow: IoEyeOff,
   Friction: Flame,
   Mirage: Glasses,
   Undertow: Waves,
@@ -143,16 +141,16 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   Pendulum: ArrowLeftRight,
   Threshold: CornerDownRight,
   Tide: Waves,
-  Prism: Prism,
+  Rainbow: IoSparkles,
   Spiral: RotateCcw,
-  Metamorphosis: Butterfly,
+  Flower: Leaf,
   "Compass Rose": Compass,
   Hourglass: IoHourglass,
 
   // ===== New rare – Positive =====
   "Phoenix Rising": Flame,
   "Golden Thread": Infinity,
-  "Cosmic Alignment": Intersect,
+  Cross: X,
 
   // ===== New rare – Challenging =====
   "Dark Night": BsMoon,
