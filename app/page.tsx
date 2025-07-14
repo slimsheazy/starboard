@@ -31,12 +31,12 @@ export default function Home() {
   const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null)
   const [showSpinWheel, setShowSpinWheel] = useState(false)
 
-  // Load saved readings from localStorage
+  // Load saved readings from localStorage on initial render
   useEffect(() => {
     const savedReadingsData = localStorage.getItem("starboardSavedReadings")
     if (savedReadingsData) {
       try {
-        setSavedReadings(JSON.parse(savedReadingsData) || [])
+        setSavedReadings(JSON.parse(savedReadingsData))
       } catch (e) {
         console.error("Error loading saved readings:", e)
       }
@@ -46,16 +46,18 @@ export default function Home() {
   // Update contextual houses when question changes
   useEffect(() => {
     if (question) {
-      setContextualHouses(getContextualHouses(question) || defaultHouses)
+      setContextualHouses(getContextualHouses(question))
     } else {
       setContextualHouses(defaultHouses)
     }
   }, [question])
 
-  // Reset save success message
+  // Reset save success message after 3 seconds
   useEffect(() => {
     if (saveSuccess !== null) {
-      const timer = setTimeout(() => setSaveSuccess(null), 3000)
+      const timer = setTimeout(() => {
+        setSaveSuccess(null)
+      }, 3000)
       return () => clearTimeout(timer)
     }
   }, [saveSuccess])
@@ -71,13 +73,21 @@ export default function Home() {
   useShakeDetection(onShake, true)
 
   const castCharms = () => {
+    // Play sound effect
     triggerGlitch()
+
+    // Get current date for astrological calculations
     const currentDate = new Date()
+
+    // Get lunar phase (simplified for demo)
     const lunarDay = currentDate.getDate() % 30
+
+    // Select random charms based on inputs
     const randomCharms = getRandomCharms(charms, 12, {
       question,
       lunarPhase: lunarDay,
-    }) || []
+    })
+
     setSelectedCharms(randomCharms)
     setIsReading(true)
   }
@@ -89,55 +99,72 @@ export default function Home() {
     setHasShaken(false)
   }
 
+  // Save the current reading
   const saveReading = () => {
     triggerFlintStrike()
+
     const newReading: SavedReading = {
       id: Date.now().toString(),
       date: new Date().toISOString(),
-      question,
+      question: question,
       charms: selectedCharms,
       houses: contextualHouses,
       name: "",
     }
+
     const updatedReadings = [...savedReadings, newReading]
     setSavedReadings(updatedReadings)
+
+    // Save to localStorage
     localStorage.setItem("starboardSavedReadings", JSON.stringify(updatedReadings))
+
+    // Show success message
     setSaveSuccess(true)
   }
 
+  // Save the current reading as PDF
   const saveReadingAsPDF = () => {
     triggerFlintStrike()
     generateReadingPDF(question, selectedCharms, contextualHouses)
   }
 
+  // Delete a saved reading
   const deleteReading = (id: string) => {
     triggerWhisper()
     const updatedReadings = savedReadings.filter((reading) => reading.id !== id)
     setSavedReadings(updatedReadings)
+
+    // Update localStorage
     localStorage.setItem("starboardSavedReadings", JSON.stringify(updatedReadings))
   }
 
+  // Rename a saved reading
   const renameReading = (id: string, name: string) => {
     triggerFlintStrike()
     const updatedReadings = savedReadings.map((reading) => (reading.id === id ? { ...reading, name } : reading))
     setSavedReadings(updatedReadings)
+
+    // Update localStorage
     localStorage.setItem("starboardSavedReadings", JSON.stringify(updatedReadings))
   }
 
+  // Load a saved reading
   const loadReading = (reading: SavedReading) => {
     triggerGlitch()
-    setQuestion(reading.question || "")
-    setSelectedCharms(reading.charms || [])
-    setContextualHouses(reading.houses || defaultHouses)
+    setQuestion(reading.question)
+    setSelectedCharms(reading.charms)
+    setContextualHouses(reading.houses)
     setIsReading(true)
     setShowSavedReadings(false)
   }
 
+  // Toggle saved readings view
   const toggleSavedReadings = () => {
     triggerWhisper()
     setShowSavedReadings(!showSavedReadings)
   }
 
+  // Toggle spin wheel
   const toggleSpinWheel = () => {
     triggerWhisper()
     setShowSpinWheel(!showSpinWheel)
@@ -146,6 +173,7 @@ export default function Home() {
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-black text-white overflow-hidden pb-20">
       <StarBackground />
+
       <h1 className="text-2xl font-extralight tracking-widest mb-6 z-10">starboard</h1>
 
       <AnimatePresence mode="wait">
@@ -160,6 +188,7 @@ export default function Home() {
             className="z-10 w-full max-w-md px-4"
           >
             <UserInputForm question={question} setQuestion={setQuestion} onSubmit={castCharms} />
+
             <div className="mt-8 text-center text-sm text-white/70">
               <p>Shake your device to cast the charms</p>
               <div className="flex justify-center gap-4 mt-4">
@@ -195,16 +224,20 @@ export default function Home() {
             className="z-10 w-full flex flex-col items-center"
           >
             <div className="relative w-full max-w-md aspect-square mx-auto">
-              <AstrologyWheel houses={contextualHouses || defaultHouses} />
-              <CharmBoard charms={selectedCharms || []} houses={contextualHouses || defaultHouses} />
+              <AstrologyWheel houses={contextualHouses} />
+              <CharmBoard charms={selectedCharms} houses={contextualHouses} />
             </div>
+
             <p className="text-xs text-white/50 mt-2 text-center">tap the charms for insight</p>
+
             {question && (
               <div className="mt-2 text-center max-w-md px-4">
                 <p className="text-sm text-white/70 italic">"{question}"</p>
               </div>
             )}
-            <ReadingSynopsis charms={selectedCharms || []} houses={contextualHouses || defaultHouses} question={question} />
+
+            <ReadingSynopsis charms={selectedCharms} houses={contextualHouses} question={question} />
+
             <div className="flex flex-wrap gap-4 mt-8 justify-center">
               <button
                 onClick={saveReading}
@@ -223,6 +256,7 @@ export default function Home() {
                   </>
                 )}
               </button>
+
               <button
                 onClick={saveReadingAsPDF}
                 className="px-6 py-2 border-2 border-white/30 rounded-full text-sm hover:bg-white/10 transition-colors tracking-wide flex items-center gap-2 sound-trigger"
@@ -230,6 +264,7 @@ export default function Home() {
                 <DownloadIcon className="w-5 h-5" />
                 save as PDF
               </button>
+
               <button
                 onClick={resetReading}
                 className="px-6 py-2 border-2 border-white/30 rounded-full text-sm hover:bg-white/10 transition-colors tracking-wide sound-trigger"
@@ -240,6 +275,8 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Bottom Navigation */}
       <BottomNav onOpenSavedReadings={toggleSavedReadings} savedReadingsCount={savedReadings.length} />
     </main>
   )
