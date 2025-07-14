@@ -1,9 +1,6 @@
--- Enable RLS
-ALTER TABLE auth.users ENABLE ROW LEVEL SECURITY;
-
 -- Create profiles table
-CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID REFERENCES auth.users(id) PRIMARY KEY,
   username TEXT UNIQUE NOT NULL,
   avatar_url TEXT,
   total_points INTEGER DEFAULT 0,
@@ -15,22 +12,22 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 );
 
 -- Create rewards table
-CREATE TABLE IF NOT EXISTS public.rewards (
+CREATE TABLE IF NOT EXISTS rewards (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   description TEXT NOT NULL,
   points INTEGER NOT NULL,
   icon TEXT NOT NULL,
-  rarity TEXT CHECK (rarity IN ('common', 'rare', 'legendary')) NOT NULL,
+  rarity TEXT CHECK (rarity IN ('common', 'rare', 'legendary')) DEFAULT 'common',
   earned_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create milestones table
-CREATE TABLE IF NOT EXISTS public.milestones (
+CREATE TABLE IF NOT EXISTS milestones (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   description TEXT NOT NULL,
   target INTEGER NOT NULL,
@@ -41,72 +38,41 @@ CREATE TABLE IF NOT EXISTS public.milestones (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Enable RLS on all tables
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.rewards ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.milestones ENABLE ROW LEVEL SECURITY;
+-- Enable Row Level Security
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rewards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE milestones ENABLE ROW LEVEL SECURITY;
 
--- Create RLS policies for profiles
-CREATE POLICY "Users can view own profile" ON public.profiles
+-- Create policies
+CREATE POLICY "Users can view own profile" ON profiles
   FOR SELECT USING (auth.uid() = id);
 
-CREATE POLICY "Users can update own profile" ON public.profiles
+CREATE POLICY "Users can update own profile" ON profiles
   FOR UPDATE USING (auth.uid() = id);
 
-CREATE POLICY "Users can insert own profile" ON public.profiles
+CREATE POLICY "Users can insert own profile" ON profiles
   FOR INSERT WITH CHECK (auth.uid() = id);
 
--- Create RLS policies for rewards
-CREATE POLICY "Users can view own rewards" ON public.rewards
+CREATE POLICY "Users can view own rewards" ON rewards
   FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert own rewards" ON public.rewards
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-
--- Create RLS policies for milestones
-CREATE POLICY "Users can view own milestones" ON public.milestones
+CREATE POLICY "Users can view own milestones" ON milestones
   FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can update own milestones" ON public.milestones
+CREATE POLICY "Users can update own milestones" ON milestones
   FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert own milestones" ON public.milestones
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Create function to handle new user signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, username, avatar_url)
-  VALUES (
-    NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'username', 'User' || substr(NEW.id::text, 1, 8)),
-    COALESCE(NEW.raw_user_meta_data->>'avatar_url', 'https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=150&h=150&fit=crop&crop=face')
-  );
+  INSERT INTO public.profiles (id, username)
+  VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'username', 'CosmicSeeker'));
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Create trigger for new user signup
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
+CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
--- Create function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION public.update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create triggers for updated_at
-CREATE TRIGGER update_profiles_updated_at
-  BEFORE UPDATE ON public.profiles
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_milestones_updated_at
-  BEFORE UPDATE ON public.milestones
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
