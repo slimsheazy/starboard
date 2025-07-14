@@ -3,7 +3,7 @@
  * --------------------------------------------------
  * • Legacy charms  → IonIcons (react-icons/io5)  ✅
  * • New 2025 charms → Lucide icons               ✅
- * • Any unmapped charm falls back to a "?" glyph.
+ * • Any unmapped charm falls back to a “?” glyph.
  */
 
 import type React from "react"
@@ -36,17 +36,18 @@ import {
   IoTrendingUp,
   IoWarningOutline,
   IoDocument,
-  IoEyeOff,
+  IoEyeOff, // Added for IoEyeOff
 } from "react-icons/io5"
 import { BsExclamationCircle, BsQuestionCircle, BsHeartFill, BsTelephoneX, BsCloud, BsMoon } from "react-icons/bs"
 
-// ✓ Valid Lucide icons (tested v0.292+)
+// ②  Lucide (newer symbols)
 import {
   Anchor,
   AlertTriangle,
   ArrowLeftRight,
   Atom,
   Ban,
+  FlowerIcon as Butterfly,
   CheckCircle,
   Circle,
   Compass,
@@ -56,18 +57,19 @@ import {
   Footprints,
   GitBranch,
   Glasses,
-  LucideInfinity,
+  InfinityIcon,
   Key,
   Landmark,
   Leaf,
   Pause,
   Play,
+  RainbowIcon as Prism,
   RotateCcw,
   Shuffle,
   Sun,
   Volume2,
   Waves,
-  X,
+  CrossIcon as Intersect,
 } from "lucide-react"
 
 /* -------------------------------------------------- */
@@ -119,7 +121,7 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   Sunrise: Sun,
   Bridge: Landmark,
   Harvest: Leaf,
-  Spark: Flame,
+  Spark: IoFlash, // reuse lightning bolt
   Oasis: Droplet,
   Key: Key,
 
@@ -128,9 +130,9 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   "Storm Warning": AlertTriangle,
   Quicksand: Footprints,
   Echo: Volume2,
-  Mask: IoEye,
+  Mask: IoEye, // show an eye for “mask”
   Leak: Droplet,
-  Shadow: IoEyeOff,
+  Shadow: IoEyeOff, // fallback to crossed-eye
   Friction: Flame,
   Mirage: Glasses,
   Undertow: Waves,
@@ -141,16 +143,16 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   Pendulum: ArrowLeftRight,
   Threshold: CornerDownRight,
   Tide: Waves,
-  Rainbow: IoSparkles,
+  Prism: Prism,
   Spiral: RotateCcw,
-  Flower: Leaf,
+  Metamorphosis: Butterfly,
   "Compass Rose": Compass,
   Hourglass: IoHourglass,
 
   // ===== New rare – Positive =====
   "Phoenix Rising": Flame,
-  "Golden Thread": LucideInfinity,
-  Cross: X,
+  "Golden Thread": InfinityIcon,
+  "Cosmic Alignment": Intersect,
 
   // ===== New rare – Challenging =====
   "Dark Night": BsMoon,
