@@ -1,40 +1,107 @@
-// lib/auth.ts (distinctly TypeScript, not TSX)
-import type { User } from "@supabase/supabase-js"
+import { supabase } from "./supabase"
+import type { AuthError, User } from "@supabase/supabase-js"
 
-import { supabase } from "@/lib/supabase"
+export interface AuthState {
+  user: User | null
+  loading: boolean
+  error: string | null
+}
 
-function getErrorMessage(error: Error | string): string {
-  const message = typeof error === "string" ? error : error.message
+export interface SignInResult {
+  success: boolean
+  error?: string
+  requiresRedirect?: boolean
+}
 
-  switch (message) {
-    case "Failed to fetch":
-      return "Please check your internet connection."
-    case "Auth session missing!":
-      return "You’re currently signed out. Please sign in first."
-    default:
-      console.error("Unexpected error message:", message)
-      return "An unexpected error occurred. Please try again."
+/**
+ * Sign in with Google OAuth
+ * Handles both redirect and popup flows based on environment
+ */
+export async function signInWithGoogle(): Promise<SignInResult> {
+  try {
+    // Clear any existing errors
+    const redirectUrl = getRedirectUrl()
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: redirectUrl,
+        queryParams: {
+          access_type: "offline",
+          prompt: "consent",
+        },
+        scopes: "email profile",
+      },
+    })
+
+    if (error) {
+      console.error("Google sign-in error:", error)
+      return {
+        success: false,
+        error: getErrorMessage(error),
+      }
+    }
+
+    // OAuth redirect initiated successfully
+    return {
+      success: true,
+      requiresRedirect: true,
+    }
+  } catch (error) {
+    console.error("Unexpected sign-in error:", error)
+    return {
+      success: false,
+      error: "An unexpected error occurred. Please try again.",
+    }
   }
 }
 
+/**
+ * Sign out the current user
+ */
+export async function signOut(): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase.auth.signOut()
+
+    if (error) {
+      console.error("Sign-out error:", error)
+      return {
+        success: false,
+        error: getErrorMessage(error),
+      }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error("Unexpected sign-out error:", error)
+    return {
+      success: false,
+      error: "Failed to sign out. Please try again.",
+    }
+  }
+}
+
+/**
+ * Get the current user session
+ */
 export async function getCurrentUser(): Promise<{ user: User | null; error?: string }> {
   try {
     const {
-      data: { session },
+      data: { user },
       error,
-    } = await supabase.auth.getSession()
+    } = await supabase.auth.getUser()
 
-    if (error && error.message !== "Auth session missing!") {
-      console.error("Get session error:", error)
+    if (error) {
+      console.error("Get user error:", error)
       return {
         user: null,
         error: getErrorMessage(error),
       }
     }
 
-    return { user: session?.user ?? null }
+    return { user }
   } catch (error) {
-    console.error("Unexpected get session error:", error)
+    console.error("Unexpected get user error:", error)
     return {
       user: null,
       error: "Failed to get user information.",
@@ -42,82 +109,59 @@ export async function getCurrentUser(): Promise<{ user: User | null; error?: str
   }
 }
 
-export async function signOut(): Promise<{ success: boolean; error?: string }> {
-  try {
-    const { error } = await supabase.auth.signOut()
-
-    if (error && error.message !== "Auth session missing!") {
-      console.error("Sign-out error:", error)
-      return { success: false, error: getErrorMessage(error) }
-    }
-
-    return { success: true }
-  } catch (error) {
-    console.error("Unexpected sign-out error:", error)
-    return { success: false, error: "Failed to sign out. Please try again." }
-  }
-}
-
 /**
- * True if the current origin is HTTPS or localhost – required by Google OAuth.
- * Browsers block the OAuth redirect flow on insecure origins (http except localhost).
- */
-export function supportsOAuthRedirect() {
-  const { protocol, hostname } = window.location
-  return protocol === "https:" || hostname === "localhost" || hostname === "127.0.0.1"
-}
-
-interface SignInResult {
-  success: boolean
-  requiresRedirect?: boolean
-  error?: string
-}
-
-/**
- * Initiates Supabase Google OAuth sign-in.
- * Returns { success: true, requiresRedirect: true } when the redirect is started,
- * or { success: false, error } on failure.
- */
-export async function signInWithGoogle(): Promise<SignInResult> {
-  if (!supportsOAuthRedirect()) {
-    return {
-      success: false,
-      error: "Google sign-in requires HTTPS (or localhost for development).",
-    }
-  }
-
-  try {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    })
-
-    if (error) {
-      console.error("Google OAuth error:", error)
-      return { success: false, error: getErrorMessage(error) }
-    }
-
-    // Supabase will now redirect the browser to Google's OAuth page.
-    return { success: true, requiresRedirect: true }
-  } catch (err) {
-    console.error("Unexpected OAuth error:", err)
-    return { success: false, error: "Failed to start Google sign-in. Please try again." }
-  }
-}
-
-/**
- * Subscribe to Supabase auth events.
- * Automatically maps the session to its `user` (or `null` when signed-out) and
- * returns an unsubscribe function.
+ * Listen to auth state changes
  */
 export function onAuthStateChange(callback: (user: User | null) => void) {
   const {
     data: { subscription },
-  } = supabase.auth.onAuthStateChange((_event, session) => {
+  } = supabase.auth.onAuthStateChange((event, session) => {
+    console.log("Auth state changed:", event, session?.user?.id)
     callback(session?.user ?? null)
   })
 
   return () => subscription.unsubscribe()
+}
+
+/**
+ * Get the appropriate redirect URL based on environment
+ */
+function getRedirectUrl(): string {
+  // In production, use the actual domain
+  if (typeof window !== "undefined") {
+    const { protocol, host } = window.location
+    return `${protocol}//${host}/auth/callback`
+  }
+
+  // Fallback for server-side rendering
+  return process.env.NEXT_PUBLIC_SITE_URL
+    ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
+    : "http://localhost:3000/auth/callback"
+}
+
+/**
+ * Convert Supabase auth errors to user-friendly messages
+ */
+function getErrorMessage(error: AuthError): string {
+  switch (error.message) {
+    case "Invalid login credentials":
+      return "Invalid email or password. Please try again."
+    case "Email not confirmed":
+      return "Please check your email and click the confirmation link."
+    case "Too many requests":
+      return "Too many sign-in attempts. Please wait a moment and try again."
+    case "Signup not allowed for this instance":
+      return "New registrations are currently disabled."
+    default:
+      // Log the actual error for debugging
+      console.error("Auth error details:", error)
+      return error.message || "Authentication failed. Please try again."
+  }
+}
+
+/**
+ * Check if the current environment supports OAuth redirects
+ */
+export function supportsOAuthRedirect(): boolean {
+  return typeof window !== "undefined" && window.location.protocol.startsWith("http")
 }
