@@ -2,53 +2,71 @@
 
 import { useEffect, useState } from "react"
 
-interface ShakeDetectionOptions {
-  threshold?: number // Acceleration threshold for shake detection
-  debounceTime?: number // Time in ms to debounce shake events
-}
+// Threshold for shake detection
+const SHAKE_THRESHOLD = 15
 
-export function useShakeDetection(onShake: () => void, enabled = true, options?: ShakeDetectionOptions) {
-  const { threshold = 15, debounceTime = 500 } = options || {}
-  const [lastShakeTime, setLastShakeTime] = useState(0)
+export default function useShakeDetection(onShake: () => void, enabled = true) {
+  const [lastX, setLastX] = useState(0)
+  const [lastY, setLastY] = useState(0)
+  const [lastZ, setLastZ] = useState(0)
+  const [lastUpdate, setLastUpdate] = useState(0)
+  const [cooldown, setCooldown] = useState(false)
 
   useEffect(() => {
-    if (!enabled || typeof window === "undefined" || !("DeviceMotionEvent" in window)) {
+    if (!enabled) return
+
+    // Check if device motion is available
+    if (!window.DeviceMotionEvent) {
+      console.log("Device motion not supported")
       return
     }
 
-    let lastX = 0,
-      lastY = 0,
-      lastZ = 0
+    const handleMotion = (event: DeviceMotionEvent) => {
+      const current = Date.now()
+      const timeDiff = current - lastUpdate
 
-    const handleMotionEvent = (event: DeviceMotionEvent) => {
-      const acceleration = event.accelerationIncludingGravity
+      // Only process if enough time has passed
+      if (timeDiff > 100) {
+        const acceleration = event.accelerationIncludingGravity
 
-      if (!acceleration || !acceleration.x || !acceleration.y || !acceleration.z) {
-        return
-      }
+        if (!acceleration || acceleration.x === null) return
 
-      const curTime = Date.now()
+        const x = acceleration.x || 0
+        const y = acceleration.y || 0
+        const z = acceleration.z || 0
 
-      if (curTime - lastShakeTime > debounceTime) {
-        const deltaX = Math.abs(acceleration.x - lastX)
-        const deltaY = Math.abs(acceleration.y - lastY)
-        const deltaZ = Math.abs(acceleration.z - lastZ)
+        const deltaX = Math.abs(lastX - x)
+        const deltaY = Math.abs(lastY - y)
+        const deltaZ = Math.abs(lastZ - z)
 
-        if (deltaX > threshold || deltaY > threshold || deltaZ > threshold) {
-          onShake()
-          setLastShakeTime(curTime)
+        // Check if motion exceeds threshold
+        if (
+          (deltaX > SHAKE_THRESHOLD && deltaY > SHAKE_THRESHOLD) ||
+          (deltaX > SHAKE_THRESHOLD && deltaZ > SHAKE_THRESHOLD) ||
+          (deltaY > SHAKE_THRESHOLD && deltaZ > SHAKE_THRESHOLD)
+        ) {
+          if (!cooldown) {
+            onShake()
+            setCooldown(true)
+
+            // Prevent multiple triggers
+            setTimeout(() => {
+              setCooldown(false)
+            }, 2000)
+          }
         }
-      }
 
-      lastX = acceleration.x
-      lastY = acceleration.y
-      lastZ = acceleration.z
+        setLastX(x)
+        setLastY(y)
+        setLastZ(z)
+        setLastUpdate(current)
+      }
     }
 
-    window.addEventListener("devicemotion", handleMotionEvent)
+    window.addEventListener("devicemotion", handleMotion)
 
     return () => {
-      window.removeEventListener("devicemotion", handleMotionEvent)
+      window.removeEventListener("devicemotion", handleMotion)
     }
-  }, [onShake, enabled, threshold, debounceTime, lastShakeTime])
+  }, [lastUpdate, lastX, lastY, lastZ, onShake, cooldown, enabled])
 }

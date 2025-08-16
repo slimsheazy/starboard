@@ -8,17 +8,22 @@ import { getCharmIcon } from "@/lib/charm-icons"
 import { CharmTooltip } from "./charm-tooltip"
 import { SearchIcon, CheckIcon } from "./cosmic-icons"
 import { triggerFlintStrike } from "./sound-effects"
-import { charms } from "@/lib/charms"
 
 interface CharmSelectorProps {
-  onCharmsChange: (charms: string[]) => void
-  selectedCharms: string[]
+  allCharms: Charm[]
+  selectedCharms: Charm[]
+  onSelectCharm: (charm: Charm) => void
+  onRemoveCharm: (charm: Charm) => void
+  onRandomize: () => void
+  onConfirm: () => void
 }
 
 // Function to get a cosmic color based on charm name
 const getCosmicColor = (charmName: string): string => {
+  // Use the first character code to determine color
   const charCode = charmName.charCodeAt(0)
 
+  // Assign colors based on character code modulo 4
   if (charCode % 4 === 0) {
     return "var(--color-deep-purple)"
   } else if (charCode % 4 === 1) {
@@ -41,12 +46,17 @@ const getCategory = (charmName: string): string => {
   return "Insights"
 }
 
-export function CharmSelector({ onCharmsChange, selectedCharms = [] }: CharmSelectorProps) {
+export default function CharmSelector({
+  allCharms,
+  selectedCharms,
+  onSelectCharm,
+  onRemoveCharm,
+  onRandomize,
+  onConfirm,
+}: CharmSelectorProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCharm, setSelectedCharm] = useState<Charm | null>(null)
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
-
-  const allCharms = charms || []
 
   const filteredCharms = allCharms.filter(
     (charm) =>
@@ -65,11 +75,11 @@ export function CharmSelector({ onCharmsChange, selectedCharms = [] }: CharmSele
   }
 
   const toggleCharmSelection = (charm: Charm) => {
-    const isSelected = selectedCharms.includes(charm.id)
+    const isSelected = selectedCharms.some((c) => c.name === charm.name)
     if (isSelected) {
-      onCharmsChange(selectedCharms.filter((id) => id !== charm.id))
-    } else if (selectedCharms.length < 3) {
-      onCharmsChange([...selectedCharms, charm.id])
+      onRemoveCharm(charm)
+    } else if (selectedCharms.length < 12) {
+      onSelectCharm(charm)
     }
   }
 
@@ -89,14 +99,6 @@ export function CharmSelector({ onCharmsChange, selectedCharms = [] }: CharmSele
     charmsByCategory[category].push(charm)
   })
 
-  if (allCharms.length === 0) {
-    return (
-      <div className="w-full max-w-md mx-auto bg-black/90 border-2 border-white/20 rounded-lg shadow-lg p-4">
-        <p className="text-white text-center">Loading charms...</p>
-      </div>
-    )
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -107,7 +109,7 @@ export function CharmSelector({ onCharmsChange, selectedCharms = [] }: CharmSele
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-medium text-white">Select Your Charms</h2>
         <span className="text-sm text-white/70 bg-black/50 border border-white/20 px-2 py-1 rounded-full">
-          {selectedCharms.length}/3
+          {selectedCharms.length}/12
         </span>
       </div>
 
@@ -125,13 +127,13 @@ export function CharmSelector({ onCharmsChange, selectedCharms = [] }: CharmSele
       </div>
 
       <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 charm-list">
-        {Object.entries(charmsByCategory).map(([category, categoryCharms]) => (
+        {Object.entries(charmsByCategory).map(([category, charms]) => (
           <div key={category} className="border-2 border-white/10 rounded-lg p-3 bg-black/30">
             <h3 className="text-sm font-medium text-white/80 mb-2">{category}</h3>
             <div className="grid grid-cols-4 gap-2">
-              {categoryCharms.map((charm, index) => {
+              {charms.map((charm, index) => {
                 const CharmIcon = getCharmIcon(charm.name)
-                const isSelected = selectedCharms.includes(charm.id)
+                const isSelected = selectedCharms.some((c) => c.name === charm.name)
                 const isRare = charm.rarity === "rare"
                 const cosmicColor = getCosmicColor(charm.name)
 
@@ -174,6 +176,22 @@ export function CharmSelector({ onCharmsChange, selectedCharms = [] }: CharmSele
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="flex gap-2 mt-6">
+        <button
+          onClick={onRandomize}
+          className="flex-1 py-2 rounded-lg transition-colors bg-black/50 border-2 border-white/20 hover:bg-white/10 text-white text-sm sound-trigger"
+        >
+          Randomize
+        </button>
+        <button
+          onClick={onConfirm}
+          disabled={selectedCharms.length === 0}
+          className="flex-1 py-2 rounded-lg transition-colors cosmic-glow bg-black/30 border-2 border-neon-pink text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed sound-trigger"
+        >
+          Cast Charms
+        </button>
       </div>
 
       {selectedCharm && <CharmTooltip charm={selectedCharm} position={tooltipPosition} onClose={closeTooltip} />}

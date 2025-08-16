@@ -1,51 +1,44 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from "react"
-import { VolumeX, Volume2 } from 'lucide-react';
-import { Howl } from "howler"
+import { useState, useEffect } from "react"
+import { SoundIcon, MuteIcon } from "./cosmic-icons"
 
 interface SoundEffectsProps {
   className?: string
 }
 
 interface AudioInstance {
-  audio: Howl | null
+  audio: HTMLAudioElement | null
   loaded: boolean
   error: string | null
 }
 
-export default function SoundEffects({ className }: SoundEffectsProps): React.ReactElement {
+export default function SoundEffects({ className }: SoundEffectsProps) {
   const [isMuted, setIsMuted] = useState(false)
   const [audioInstances, setAudioInstances] = useState<Record<string, AudioInstance>>({})
   const [userInteracted, setUserInteracted] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
-  const userInteractedRef = useRef(false) // Fix closure issue
 
-  // Simplified audio configuration with fallback strategy
+  // Audio configuration with the new MP3 files
   const audioConfigs = {
     flintStrike: {
       name: "Flint Strike",
-      files: ["/sounds/flint-strike.mp3"],
+      files: ["flint-strike.mp3"],
     },
     whisper: {
       name: "Whisper",
-      files: ["/sounds/whisper.mp3"],
+      files: ["whisper.mp3"],
     },
     glitch: {
       name: "Glitch",
-      files: ["/sounds/glitch.mp3"],
+      files: ["glitch.mp3"],
     },
   }
 
   useEffect(() => {
-    // Wrap async calls in an inner function
-    const init = async () => {
-      await initializeAudio()
-      setupEventListeners()
-    }
-    init()
+    initializeAudio()
+    setupEventListeners()
     return () => cleanupEventListeners()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const initializeAudio = async () => {
@@ -60,13 +53,13 @@ export default function SoundEffects({ className }: SoundEffectsProps): React.Re
   }
 
   const createAudioInstance = async (files: string[], name: string): Promise<AudioInstance> => {
+    // Try each file format until one works
     for (const filename of files) {
       try {
-        const audio = new Howl({
-          src: [filename],
-          volume: 0.5,
-        })
+        const audio = new Audio()
+        const path = `/sounds/${filename}`
 
+        // Test if the audio can load
         const canLoad = await new Promise<boolean>((resolve) => {
           let resolved = false
 
@@ -84,15 +77,23 @@ export default function SoundEffects({ className }: SoundEffectsProps): React.Re
             }
           }
 
-          audio.on("load", onLoad)
-          audio.on("loaderror", onError)
+          // Set up event listeners
+          audio.addEventListener("canplaythrough", onLoad, { once: true })
+          audio.addEventListener("loadeddata", onLoad, { once: true })
+          audio.addEventListener("error", onError, { once: true })
 
+          // Timeout after 3 seconds
           setTimeout(() => {
             if (!resolved) {
               resolved = true
               resolve(false)
             }
-          }, 2000)
+          }, 3000)
+
+          // Configure and load
+          audio.preload = "auto"
+          audio.volume = 0.7
+          audio.src = path
         })
 
         if (canLoad) {
@@ -103,23 +104,16 @@ export default function SoundEffects({ className }: SoundEffectsProps): React.Re
           }
         }
       } catch (error) {
+        // Continue to next format
         continue
       }
     }
 
+    // If no format worked, return a silent instance
     return {
       audio: null,
       loaded: false,
       error: `Could not load ${name}`,
-    }
-  }
-
-  // Store event handlers for cleanup
-  const userInteractionEvents = useRef(["click", "touchstart", "keydown"])
-  const handleUserInteraction = () => {
-    if (!userInteractedRef.current) {
-      userInteractedRef.current = true
-      setUserInteracted(true)
     }
   }
 
@@ -129,7 +123,16 @@ export default function SoundEffects({ className }: SoundEffectsProps): React.Re
     document.addEventListener("play-glitch", playGlitch)
     document.addEventListener("play-combination", playCombination)
 
-    userInteractionEvents.current.forEach((event) => {
+    // Detect user interaction for autoplay policy
+    const handleUserInteraction = () => {
+      if (!userInteracted) {
+        setUserInteracted(true)
+        console.log("User interaction detected - sounds enabled")
+      }
+    }
+
+    const events = ["click", "touchstart", "keydown"]
+    events.forEach((event) => {
       document.addEventListener(event, handleUserInteraction, { once: true })
     })
   }
@@ -139,33 +142,52 @@ export default function SoundEffects({ className }: SoundEffectsProps): React.Re
     document.removeEventListener("play-whisper", playWhisper)
     document.removeEventListener("play-glitch", playGlitch)
     document.removeEventListener("play-combination", playCombination)
-
-    userInteractionEvents.current.forEach((event) => {
-      document.removeEventListener(event, handleUserInteraction)
-    })
   }
 
   const playAudio = async (key: string, volumeMultiplier = 1) => {
-    if (isMuted || !userInteractedRef.current) return
+    if (isMuted || !userInteracted) {
+      console.log(`Audio blocked: muted=${isMuted}, userInteracted=${userInteracted}`)
+      return
+    }
 
     const instance = audioInstances[key]
-    if (!instance?.loaded || !instance.audio) return
+    if (!instance?.loaded || !instance.audio) {
+      console.log(`Audio not available: ${key}`, instance)
+      return
+    }
 
     try {
-      instance.audio.volume(0.5 * volumeMultiplier)
-      instance.audio.play()
+      // Clone the audio to allow overlapping sounds
+      const audioClone = instance.audio.cloneNode() as HTMLAudioElement
+      audioClone.currentTime = 0
+      audioClone.volume = Math.min(1, 0.7 * volumeMultiplier)
+      console.log(`Playing sound: ${key}`)
+      await audioClone.play()
     } catch (error) {
-      // Silently fail
+      console.error(`Error playing sound ${key}:`, error)
     }
   }
 
-  const playFlintStrike = () => playAudio("flintStrike")
-  const playWhisper = () => playAudio("whisper")
-  const playGlitch = () => playAudio("glitch")
-  const playCombination = () => playAudio("glitch", 1.2)
+  const playFlintStrike = () => {
+    console.log("Flint strike triggered")
+    playAudio("flintStrike")
+  }
+  const playWhisper = () => {
+    console.log("Whisper triggered")
+    playAudio("whisper")
+  }
+  const playGlitch = () => {
+    console.log("Glitch triggered")
+    playAudio("glitch")
+  }
+  const playCombination = () => {
+    console.log("Combination triggered")
+    playAudio("glitch", 1.2)
+  }
 
   const toggleMute = () => {
     setIsMuted(!isMuted)
+    console.log(`Sound ${!isMuted ? "muted" : "unmuted"}`)
   }
 
   const getLoadedCount = () => {
@@ -190,7 +212,7 @@ export default function SoundEffects({ className }: SoundEffectsProps): React.Re
         aria-label={isMuted ? "Unmute sounds" : "Mute sounds"}
         title={`${isMuted ? "Unmute" : "Mute"} sounds`}
       >
-        {isMuted ? <VolumeX className="w-5 h-5 text-white/70" /> : <Volume2 className="w-5 h-5 text-white" />}
+        {isMuted ? <MuteIcon className="w-5 h-5 text-white/70" /> : <SoundIcon className="w-5 h-5 text-white" />}
       </button>
 
       {/* Simple status indicator */}
@@ -203,17 +225,21 @@ export default function SoundEffects({ className }: SoundEffectsProps): React.Re
 
 // Helper functions to trigger sounds from anywhere in the app
 export const triggerFlintStrike = () => {
+  console.log("triggerFlintStrike called")
   document.dispatchEvent(new Event("play-flint-strike"))
 }
 
 export const triggerWhisper = () => {
+  console.log("triggerWhisper called")
   document.dispatchEvent(new Event("play-whisper"))
 }
 
 export const triggerGlitch = () => {
+  console.log("triggerGlitch called")
   document.dispatchEvent(new Event("play-glitch"))
 }
 
 export const triggerCombination = () => {
+  console.log("triggerCombination called")
   document.dispatchEvent(new Event("play-combination"))
 }

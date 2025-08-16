@@ -1,153 +1,160 @@
 "use client"
 
-import { useAuth } from "@/lib/auth-context"
-import { useRouter } from "next/navigation"
-import { useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { StarBackground } from "@/components/star-background"
-import { BottomNav } from "@/components/bottom-nav"
-import { SignInButton } from "@/components/auth/sign-in-button"
-import { User, BookOpen, Sparkles } from "lucide-react"
+import { useState, useEffect } from "react"
+import { motion } from "framer-motion"
+import StarBackground from "@/components/star-background"
+import BottomNav from "@/components/bottom-nav"
+import ProfileModal from "@/components/profile-modal"
+import { User, Calendar, Sparkles, Trophy } from "lucide-react"
+
+interface Fortune {
+  id: string
+  fortune_text: string
+  category: string
+  spin_date: string
+}
 
 export default function ProfilePage() {
-  const { user, isAuthenticated, isLoading } = useAuth()
-  const router = useRouter()
+  const [fortunes, setFortunes] = useState<Fortune[]>([])
+  const [showModal, setShowModal] = useState(false)
+  const [savedReadings, setSavedReadings] = useState([])
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push("/auth/signin")
+    // Load fortunes from localStorage
+    const savedFortunes = localStorage.getItem("starboard_fortunes")
+    if (savedFortunes) {
+      setFortunes(JSON.parse(savedFortunes))
     }
-  }, [isAuthenticated, isLoading, router])
+  }, [])
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <StarBackground />
-        <div className="text-white text-xl">Loading your cosmic profile...</div>
-      </div>
-    )
+  const getCategoryColor = (category: string) => {
+    const colors = {
+      love: "text-pink-400 bg-pink-400/10",
+      career: "text-blue-400 bg-blue-400/10",
+      health: "text-green-400 bg-green-400/10",
+      wisdom: "text-purple-400 bg-purple-400/10",
+      prosperity: "text-yellow-400 bg-yellow-400/10",
+    }
+    return colors[category as keyof typeof colors] || "text-white bg-white/10"
   }
 
-  if (!isAuthenticated || !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <StarBackground />
-        <Card className="w-full max-w-md bg-black/20 backdrop-blur-md border-purple-500/30">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-white">Access Required</CardTitle>
-            <CardDescription className="text-purple-200">Please sign in to view your profile</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <SignInButton />
-          </CardContent>
-        </Card>
-      </div>
-    )
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })
+  }
+
+  const toggleSavedReadings = () => {
+    // Placeholder for saved readings functionality
   }
 
   return (
-    <div className="min-h-screen p-4 relative">
+    <main className="relative min-h-screen bg-black text-white pb-20">
       <StarBackground />
-      <div className="max-w-2xl mx-auto space-y-6">
+
+      <div className="relative z-10 px-4 py-8">
         {/* Profile Header */}
-        <Card className="bg-black/20 backdrop-blur-md border-purple-500/30">
-          <CardHeader className="text-center">
-            <Avatar className="w-24 h-24 mx-auto mb-4">
-              <AvatarImage src={user.image || ""} alt={user.name} />
-              <AvatarFallback className="bg-purple-600 text-white text-2xl">
-                {user.name.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <CardTitle className="text-2xl font-bold text-white">{user.name}</CardTitle>
-            <CardDescription className="text-purple-200">{user.email}</CardDescription>
-          </CardHeader>
-        </Card>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
+          <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-purple-600 to-purple-800 rounded-full flex items-center justify-center">
+            <User className="w-10 h-10 text-white" />
+          </div>
+
+          <h1 className="text-2xl font-light tracking-wide mb-2">Cosmic Traveler</h1>
+
+          <div className="flex items-center justify-center gap-4 text-sm text-white/70">
+            <div className="flex items-center gap-1">
+              <Trophy className="w-4 h-4" />
+              <span>Level 1</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Sparkles className="w-4 h-4" />
+              <span>0 points</span>
+            </div>
+          </div>
+        </motion.div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="bg-black/20 backdrop-blur-md border-purple-500/30">
-            <CardContent className="p-4 text-center">
-              <BookOpen className="w-8 h-8 text-purple-400 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-white">{user.stats.totalReadings}</div>
-              <div className="text-sm text-purple-200">Total Readings</div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white/5 border border-white/10 rounded-xl p-4 text-center"
+          >
+            <Calendar className="w-6 h-6 text-purple-400 mx-auto mb-2" />
+            <p className="text-2xl font-light text-white">{fortunes.length}</p>
+            <p className="text-xs text-white/60">Fortunes Received</p>
+          </motion.div>
 
-          <Card className="bg-black/20 backdrop-blur-md border-purple-500/30">
-            <CardContent className="p-4 text-center">
-              <Sparkles className="w-8 h-8 text-purple-400 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-white">{user.stats.totalFortunes}</div>
-              <div className="text-sm text-purple-200">Fortunes Received</div>
-            </CardContent>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white/5 border border-white/10 rounded-xl p-4 text-center"
+          >
+            <Sparkles className="w-6 h-6 text-purple-400 mx-auto mb-2" />
+            <p className="text-2xl font-light text-white">0</p>
+            <p className="text-xs text-white/60">Readings Cast</p>
+          </motion.div>
         </div>
 
-        {/* Favorite Charms */}
-        <Card className="bg-black/20 backdrop-blur-md border-purple-500/30">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Sparkles className="w-5 h-5" />
-              Favorite Charms
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {user.stats.favoriteCharms.length > 0 ? (
-                user.stats.favoriteCharms.map((charm, index) => (
-                  <Badge key={index} variant="secondary" className="bg-purple-600/20 text-purple-200">
-                    {charm}
-                  </Badge>
-                ))
-              ) : (
-                <p className="text-purple-300">No favorite charms yet. Start creating readings!</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Recent Fortunes */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mb-8"
+        >
+          <h2 className="text-lg font-light tracking-wide mb-4">Recent Fortunes</h2>
 
-        {/* Account Info */}
-        <Card className="bg-black/20 backdrop-blur-md border-purple-500/30">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <User className="w-5 h-5" />
-              Account Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-purple-200">Member Since:</span>
-              <span className="text-white">{new Date(user.createdAt).toLocaleDateString()}</span>
+          {fortunes.length > 0 ? (
+            <div className="space-y-3">
+              {fortunes.slice(0, 5).map((fortune, index) => (
+                <motion.div
+                  key={fortune.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 + index * 0.1 }}
+                  className="bg-white/5 border border-white/10 rounded-lg p-4"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getCategoryColor(fortune.category)}`}
+                    >
+                      {fortune.category}
+                    </span>
+                    <span className="text-xs text-white/50">{formatDate(fortune.spin_date)}</span>
+                  </div>
+                  <p className="text-white/80 text-sm leading-relaxed">{fortune.fortune_text}</p>
+                </motion.div>
+              ))}
             </div>
-            <div className="flex justify-between">
-              <span className="text-purple-200">Last Login:</span>
-              <span className="text-white">{new Date(user.lastLogin).toLocaleDateString()}</span>
+          ) : (
+            <div className="text-center py-8">
+              <Sparkles className="w-12 h-12 text-white/30 mx-auto mb-4" />
+              <p className="text-white/60">No fortunes yet</p>
+              <p className="text-white/40 text-sm">Try the lucky spin wheel to get your first fortune!</p>
             </div>
-            <div className="flex justify-between">
-              <span className="text-purple-200">Theme:</span>
-              <span className="text-white capitalize">{user.preferences.theme}</span>
-            </div>
-          </CardContent>
-        </Card>
+          )}
+        </motion.div>
 
         {/* Actions */}
-        <div className="flex gap-4">
-          <Button onClick={() => router.push("/")} className="flex-1 bg-purple-600 hover:bg-purple-700">
-            New Reading
-          </Button>
-          <Button
-            onClick={() => router.push("/charms")}
-            variant="outline"
-            className="flex-1 border-white text-white hover:bg-white hover:text-purple-900"
+        <div className="flex gap-4 justify-center">
+          <button
+            onClick={() => setShowModal(true)}
+            className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full transition-colors"
           >
-            View History
-          </Button>
+            View All Fortunes
+          </button>
         </div>
       </div>
 
-      <BottomNav />
-    </div>
+      {/* Profile Modal */}
+      {showModal && <ProfileModal fortunes={fortunes} onClose={() => setShowModal(false)} />}
+
+      <BottomNav onOpenSavedReadings={toggleSavedReadings} savedReadingsCount={savedReadings.length} />
+    </main>
   )
 }

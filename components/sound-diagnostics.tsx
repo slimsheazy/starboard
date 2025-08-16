@@ -37,15 +37,15 @@ export default function SoundDiagnostics({ onClose }: SoundDiagnosticsProps) {
   const expectedFiles = [
     {
       name: "Flint Strike",
-      paths: ["/sounds/flint-strike.wav", "/sounds/flint-strike.mp3", "/sounds/flint-strike.ogg"],
+      paths: ["/sounds/flint-strike.wav", "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/flint-strike-bphk60QXtcP3Yek3qdjwubQEqnzGbu.mp3", "/sounds/flint-strike.ogg"],
     },
     {
       name: "Whisper",
-      paths: ["/sounds/whisper.wav", "/sounds/whisper.mp3", "/sounds/whisper.ogg"],
+      paths: ["/sounds/whisper.wav", "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/whisper-mrOgzMewQZXvuVVQz9x4A4HWvDxaSO.mp3", "/sounds/whisper.ogg"],
     },
     {
       name: "Glitch",
-      paths: ["/sounds/glitch.wav", "/sounds/glitch.mp3", "/sounds/glitch.ogg"],
+      paths: ["/sounds/glitch.wav", "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/glitch-UJGqjZQ7KU5kZCLvKqo7rngcfsCCPK.mp3", "/sounds/glitch.ogg"],
     },
   ]
 

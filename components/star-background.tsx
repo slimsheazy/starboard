@@ -1,11 +1,18 @@
 "use client"
 
-import { useRef, useEffect } from "react"
-import { motion } from "framer-motion"
+import { useEffect, useRef } from "react"
 
-export function StarBackground() {
+interface Star {
+  x: number
+  y: number
+  size: number
+  opacity: number
+  twinkleSpeed: number
+  twinkleDirection: number
+}
+
+export default function StarBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const stars = useRef<Array<{ x: number; y: number; size: number; speed: number; opacity: number }>>([])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -14,6 +21,7 @@ export function StarBackground() {
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
+    // Set canvas to full screen
     const resizeCanvas = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
@@ -22,32 +30,35 @@ export function StarBackground() {
     resizeCanvas()
     window.addEventListener("resize", resizeCanvas)
 
-    // Initialize stars
-    if (stars.current.length === 0) {
-      for (let i = 0; i < 300; i++) {
-        stars.current.push({
-          x: Math.random() * canvas.width,
-          y: Math.random() * canvas.height,
-          size: Math.random() * 1.5 + 0.5,
-          speed: Math.random() * 0.3 + 0.1,
-          opacity: Math.random() * 0.8 + 0.2,
-        })
-      }
+    // Create stars
+    const stars: Star[] = []
+    const starCount = Math.floor((window.innerWidth * window.innerHeight) / 1000)
+
+    for (let i = 0; i < starCount; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: Math.random() * 1.5,
+        opacity: Math.random() * 0.8 + 0.2,
+        twinkleSpeed: Math.random() * 0.01,
+        twinkleDirection: Math.random() > 0.5 ? 1 : -1,
+      })
     }
 
+    // Animation loop
     let animationFrameId: number
 
-    const animate = () => {
+    const render = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      ctx.fillStyle = "black"
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      // Draw stars
+      stars.forEach((star) => {
+        // Update star twinkle
+        star.opacity += star.twinkleSpeed * star.twinkleDirection
 
-      stars.current.forEach((star) => {
-        star.y += star.speed
-        if (star.y > canvas.height) {
-          star.y = 0
-          star.x = Math.random() * canvas.width
+        // Reverse direction if opacity limits reached
+        if (star.opacity > 1 || star.opacity < 0.2) {
+          star.twinkleDirection *= -1
         }
 
         ctx.beginPath()
@@ -56,24 +67,16 @@ export function StarBackground() {
         ctx.fill()
       })
 
-      animationFrameId = requestAnimationFrame(animate)
+      animationFrameId = window.requestAnimationFrame(render)
     }
 
-    animate()
+    render()
 
     return () => {
       window.removeEventListener("resize", resizeCanvas)
-      cancelAnimationFrame(animationFrameId)
+      window.cancelAnimationFrame(animationFrameId)
     }
   }, [])
 
-  return (
-    <motion.canvas
-      ref={canvasRef}
-      className="absolute inset-0 z-0"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 1 }}
-    />
-  )
+  return <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full z-0" />
 }

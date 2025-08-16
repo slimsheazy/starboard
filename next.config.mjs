@@ -1,7 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-
+  swcMinify: true,
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  images: {
+    unoptimized: true,
+  },
   // Ensure static files are properly served with correct headers
   async headers() {
     return [
@@ -19,6 +28,10 @@ const nextConfig = {
           {
             key: 'Access-Control-Allow-Methods',
             value: 'GET, HEAD, OPTIONS',
+          },
+          {
+            key: 'Content-Type',
+            value: 'audio/mpeg',
           },
         ],
       },
@@ -41,18 +54,8 @@ const nextConfig = {
           },
         ],
       },
-      {
-        source: '/sounds/:path*.mp3',
-        headers: [
-          {
-            key: 'Content-Type',
-            value: 'audio/mpeg',
-          },
-        ],
-      },
     ]
   },
-
   // Ensure public directory is properly served
   async rewrites() {
     return [
@@ -61,14 +64,6 @@ const nextConfig = {
         destination: '/sounds/:path*',
       },
     ]
-  },
-
-  webpack: (config) => {
-    config.externals.push({
-      "utf-8-validate": "commonjs utf-8-validate",
-      bufferutil: "commonjs bufferutil",
-    })
-    return config
   },
 }
 

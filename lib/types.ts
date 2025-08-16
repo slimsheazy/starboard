@@ -1,15 +1,20 @@
-export interface Charm {
-  id: string
+export interface House {
+  number: number
   name: string
+  keyword: string
   description: string
-  rarity: "common" | "rare"
+  contextKeyword?: string
 }
 
-export interface House {
-  id: string
+export interface Charm {
   name: string
   description: string
-  keywords: string[]
+  rarity: "common" | "uncommon" | "rare"
+}
+
+export interface ReadingContext {
+  question: string
+  lunarPhase: number
 }
 
 export interface SavedReading {
@@ -18,17 +23,6 @@ export interface SavedReading {
   question: string
   charms: Charm[]
   houses: House[]
-  name: string
-}
-
-export interface UserProfile {
-  id: string
-  name: string | null
-  email: string | null
-  image: string | null
-  fortuneCount: number
-  readingCount: number
-  lastFortuneDate: string | null
-  lastReadingDate: string | null
-  createdAt: string
+  synopsis?: string
+  name?: string
 }

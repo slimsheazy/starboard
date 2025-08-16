@@ -53,12 +53,6 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Custom Cosmic Colors
-        "deep-purple": "var(--color-deep-purple)",
-        "neon-pink": "var(--color-neon-pink)",
-        "acid-green": "var(--color-acid-green)",
-        "cosmic-blue": "var(--color-cosmic-blue)",
-        "star-yellow": "var(--color-star-yellow)",
       },
       borderRadius: {
         lg: "var(--radius)",
