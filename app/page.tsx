@@ -64,7 +64,7 @@ export default function Home() {
 
   // Handle shake detection
   const onShake = () => {
-    if (!hasShaken) {
+    if (!hasShaken && !isReading) {
       console.log("Shake detected - casting charms")
       castCharms()
       setHasShaken(true)
@@ -74,7 +74,10 @@ export default function Home() {
   useShakeDetection(onShake, true)
 
   const castCharms = () => {
-    console.log("Casting charms...")
+    console.log("🔮 castCharms function called")
+    console.log("📚 Available charms:", charms.length)
+    console.log("❓ Question:", question || "(no question)")
+
     // Play sound effect
     triggerGlitch()
 
@@ -90,21 +93,31 @@ export default function Home() {
       lunarPhase: lunarDay,
     })
 
+    console.log("✨ Selected charms:", randomCharms.length)
+    console.log(
+      "🎯 Charm names:",
+      randomCharms.map((c) => c.name),
+    )
+
+    // Update state
     setSelectedCharms(randomCharms)
     setIsReading(true)
+
+    console.log("🎭 State updated - isReading: true, selectedCharms count:", randomCharms.length)
   }
 
   const resetReading = () => {
-    console.log("Resetting reading...")
+    console.log("🔄 Resetting reading...")
     triggerWhisper()
     setSelectedCharms([])
     setIsReading(false)
     setHasShaken(false)
+    setQuestion("")
   }
 
   // Save the current reading
   const saveReading = () => {
-    console.log("Saving reading...")
+    console.log("💾 Saving reading...")
     triggerFlintStrike()
 
     const newReading: SavedReading = {
@@ -128,14 +141,14 @@ export default function Home() {
 
   // Save the current reading as PDF
   const saveReadingAsPDF = () => {
-    console.log("Saving reading as PDF...")
+    console.log("📄 Saving reading as PDF...")
     triggerFlintStrike()
     generateReadingPDF(question, selectedCharms, contextualHouses)
   }
 
   // Delete a saved reading
   const deleteReading = (id: string) => {
-    console.log("Deleting reading:", id)
+    console.log("🗑️ Deleting reading:", id)
     triggerWhisper()
     const updatedReadings = savedReadings.filter((reading) => reading.id !== id)
     setSavedReadings(updatedReadings)
@@ -146,7 +159,7 @@ export default function Home() {
 
   // Rename a saved reading
   const renameReading = (id: string, name: string) => {
-    console.log("Renaming reading:", id, name)
+    console.log("✏️ Renaming reading:", id, name)
     triggerFlintStrike()
     const updatedReadings = savedReadings.map((reading) => (reading.id === id ? { ...reading, name } : reading))
     setSavedReadings(updatedReadings)
@@ -157,7 +170,7 @@ export default function Home() {
 
   // Load a saved reading
   const loadReading = (reading: SavedReading) => {
-    console.log("Loading reading:", reading.id)
+    console.log("📖 Loading reading:", reading.id)
     triggerGlitch()
     setQuestion(reading.question)
     setSelectedCharms(reading.charms)
@@ -168,17 +181,25 @@ export default function Home() {
 
   // Toggle saved readings view
   const toggleSavedReadings = () => {
-    console.log("Toggling saved readings view")
+    console.log("📚 Toggling saved readings view")
     triggerWhisper()
     setShowSavedReadings(!showSavedReadings)
   }
 
   // Toggle spin wheel
   const toggleSpinWheel = () => {
-    console.log("Toggling spin wheel")
+    console.log("🎰 Toggling spin wheel")
     triggerWhisper()
     setShowSpinWheel(!showSpinWheel)
   }
+
+  console.log("🎨 Render state:", {
+    isReading,
+    selectedCharmsCount: selectedCharms.length,
+    showSavedReadings,
+    showSpinWheel,
+    question: question || "(empty)",
+  })
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-black text-white overflow-hidden pb-20">
@@ -204,7 +225,7 @@ export default function Home() {
               <div className="flex justify-center mt-4">
                 <button
                   onClick={() => {
-                    console.log("Lucky spin button clicked")
+                    console.log("🎰 Lucky spin button clicked")
                     toggleSpinWheel()
                   }}
                   className="px-6 py-2 rounded-full text-sm transition-colors bg-black/30 border-2 border-acid-green hover:bg-acid-green/10 sound-trigger"
@@ -248,7 +269,7 @@ export default function Home() {
             <div className="flex flex-wrap gap-4 mt-8 justify-center">
               <button
                 onClick={() => {
-                  console.log("Save reading button clicked")
+                  console.log("💾 Save reading button clicked")
                   saveReading()
                 }}
                 className="px-6 py-2 border-2 border-white/30 rounded-full text-sm hover:bg-white/10 transition-colors tracking-wide flex items-center gap-2 relative sound-trigger"
@@ -269,7 +290,7 @@ export default function Home() {
 
               <button
                 onClick={() => {
-                  console.log("Save as PDF button clicked")
+                  console.log("📄 Save as PDF button clicked")
                   saveReadingAsPDF()
                 }}
                 className="px-6 py-2 border-2 border-white/30 rounded-full text-sm hover:bg-white/10 transition-colors tracking-wide flex items-center gap-2 sound-trigger"
@@ -280,7 +301,7 @@ export default function Home() {
 
               <button
                 onClick={() => {
-                  console.log("New reading button clicked")
+                  console.log("🔄 New reading button clicked")
                   resetReading()
                 }}
                 className="px-6 py-2 border-2 border-white/30 rounded-full text-sm hover:bg-white/10 transition-colors tracking-wide sound-trigger"
