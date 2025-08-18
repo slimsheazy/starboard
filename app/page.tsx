@@ -201,16 +201,7 @@ export default function Home() {
 
             <div className="mt-8 text-center text-sm text-white/70">
               <p>Shake your device to cast the charms</p>
-              <div className="flex justify-center gap-4 mt-4">
-                <button
-                  onClick={() => {
-                    console.log("Cast charms button clicked")
-                    castCharms()
-                  }}
-                  className="px-6 py-2 rounded-full text-sm transition-colors cosmic-glow bg-black/30 border-2 border-neon-pink sound-trigger"
-                >
-                  cast charms
-                </button>
+              <div className="flex justify-center mt-4">
                 <button
                   onClick={() => {
                     console.log("Lucky spin button clicked")

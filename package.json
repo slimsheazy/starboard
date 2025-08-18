@@ -16,15 +16,8 @@
     "@radix-ui/react-progress": "latest",
     "@radix-ui/react-slot": "^1.0.2",
     "@radix-ui/react-tabs": "latest",
-    "@react-three/drei": "latest",
-    "@react-three/fiber": "latest",
-    "canvas-confetti": "latest",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "expo": "latest",
-    "expo-asset": "latest",
-    "expo-file-system": "latest",
-    "expo-gl": "latest",
     "framer-motion": "latest",
     "jspdf": "latest",
     "lucide-react": "^0.454.0",
@@ -32,10 +25,8 @@
     "react": "^18",
     "react-dom": "^18",
     "react-icons": "latest",
-    "react-native": "latest",
     "tailwind-merge": "^2.5.5",
-    "tailwindcss-animate": "^1.0.7",
-    "three": "latest"
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@types/node": "^22",

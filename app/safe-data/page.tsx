@@ -64,11 +64,11 @@ function useSafeData() {
 
 // Safe property access component
 function SafePropertyDisplay({ data }: { data?: DataWithS | null }) {
-  // Multiple safe access patterns
+  // Multiple safe access patterns - all properly guarded
   const sValue = data?.S
   const sValueWithFallback = data?.S ?? "Not provided"
   const sValueAsString = String(data?.S || "")
-  const hasS = data && "S" in data
+  const hasS = data ? "S" in data : false
   const sExists = data?.S !== undefined && data?.S !== null
 
   return (

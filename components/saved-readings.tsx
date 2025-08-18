@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { motion } from "framer-motion"
-import type { SavedReading } from "@/lib/types"
-import { getCharmIcon } from "@/lib/charm-icons"
-import { TrashIcon, DownloadIcon, EditIcon } from "./cosmic-icons"
-import { generateReadingPDF } from "@/lib/pdf-utils"
+import { motion, AnimatePresence } from "framer-motion"
 import { triggerFlintStrike, triggerWhisper } from "./sound-effects"
+import type { SavedReading } from "@/lib/types"
+import { generateReadingPDF } from "@/lib/pdf-utils"
+import { getCharmIcon } from "@/lib/charm-icons"
+import { getCharmColor } from "@/lib/charm-colors"
 
 interface SavedReadingsProps {
   readings: SavedReading[]
@@ -17,42 +17,33 @@ interface SavedReadingsProps {
 }
 
 export default function SavedReadings({ readings, onClose, onDelete, onLoad, onRename }: SavedReadingsProps) {
-  const [expandedReading, setExpandedReading] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editName, setEditName] = useState<string>("")
+  const [editName, setEditName] = useState("")
 
-  const toggleExpand = (id: string) => {
-    console.log("Toggling expand for reading:", id)
-    if (expandedReading === id) {
-      setExpandedReading(null)
-    } else {
-      setExpandedReading(id)
-    }
+  const handleRename = (reading: SavedReading) => {
+    console.log("Starting rename for:", reading.id)
+    setEditingId(reading.id)
+    setEditName(reading.name || "")
   }
 
-  const handleSaveAsPDF = (reading: SavedReading) => {
-    console.log("Saving reading as PDF:", reading.id)
-    generateReadingPDF(reading.question, reading.charms, reading.houses, new Date(reading.date))
+  const handleSaveRename = (id: string) => {
+    console.log("Saving rename:", id, editName)
     triggerFlintStrike()
-  }
-
-  const startEditing = (id: string, currentName: string) => {
-    console.log("Starting edit for reading:", id)
-    setEditingId(id)
-    setEditName(currentName || "")
-  }
-
-  const saveReadingName = (id: string) => {
-    console.log("Saving reading name:", id, editName)
     onRename(id, editName)
     setEditingId(null)
-    triggerFlintStrike()
+    setEditName("")
+  }
+
+  const handleCancelRename = () => {
+    console.log("Canceling rename")
+    setEditingId(null)
+    setEditName("")
   }
 
   const handleDelete = (id: string) => {
     console.log("Deleting reading:", id)
-    onDelete(id)
     triggerWhisper()
+    onDelete(id)
   }
 
   const handleLoad = (reading: SavedReading) => {
@@ -60,18 +51,27 @@ export default function SavedReadings({ readings, onClose, onDelete, onLoad, onR
     onLoad(reading)
   }
 
-  const handleClose = () => {
-    console.log("Closing saved readings")
-    onClose()
-    triggerWhisper()
+  const handleExportPDF = (reading: SavedReading) => {
+    console.log("Exporting reading as PDF:", reading.id)
+    triggerFlintStrike()
+    generateReadingPDF(reading.question, reading.charms, reading.houses)
   }
 
-  const getCosmicColor = (charmName: string): string => {
-    const charCode = charmName.charCodeAt(0)
-    if (charCode % 4 === 0) return "var(--color-deep-purple)"
-    if (charCode % 4 === 1) return "var(--color-neon-pink)"
-    if (charCode % 4 === 2) return "var(--color-acid-green)"
-    return "var(--color-cosmic-blue)"
+  const handleClose = () => {
+    console.log("Closing saved readings")
+    triggerWhisper()
+    onClose()
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
   }
 
   return (
@@ -79,129 +79,136 @@ export default function SavedReadings({ readings, onClose, onDelete, onLoad, onR
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="z-10 w-full max-w-md px-4"
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
     >
-      <div className="bg-black/60 border-2 border-white/20 rounded-lg p-4">
-        <h2 className="text-lg font-medium text-white mb-4 text-center">Saved Readings</h2>
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-black/90 border border-white/20 rounded-lg p-6 w-full max-w-4xl max-h-[80vh] overflow-hidden"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-light tracking-wide">Saved Readings</h2>
+          <button onClick={handleClose} className="text-white/70 hover:text-white transition-colors">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
         {readings.length === 0 ? (
-          <p className="text-center text-white/60 py-4">No saved readings yet</p>
+          <div className="text-center py-12">
+            <div className="w-16 h-16 mx-auto mb-4 bg-white/5 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-white mb-2">No Saved Readings</h3>
+            <p className="text-white/70">Cast some charms and save your readings to see them here.</p>
+          </div>
         ) : (
-          <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 charm-list">
-            {readings.map((reading) => (
-              <div key={reading.id} className="border-2 border-white/10 rounded-lg p-3 bg-black/30">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="cursor-pointer flex-1" onClick={() => toggleExpand(reading.id)}>
-                    {editingId === reading.id ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          className="bg-black/50 border-2 border-white/30 rounded px-2 py-1 text-sm text-white w-full"
-                          autoFocus
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") saveReadingName(reading.id)
-                            if (e.key === "Escape") setEditingId(null)
-                          }}
-                        />
-                        <button
-                          onClick={() => saveReadingName(reading.id)}
-                          className="bg-white/10 hover:bg-white/20 rounded p-1"
-                        >
-                          Save
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm text-white/80 font-medium">
-                            {reading.name || new Date(reading.date).toLocaleDateString()}
-                          </p>
+          <div className="overflow-y-auto max-h-[60vh] space-y-4">
+            <AnimatePresence>
+              {readings.map((reading) => (
+                <motion.div
+                  key={reading.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="bg-white/5 border border-white/10 rounded-lg p-4 hover:bg-white/10 transition-colors"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      {editingId === reading.id ? (
+                        <div className="flex items-center gap-2 mb-2">
+                          <input
+                            type="text"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            className="bg-black/30 border border-white/20 rounded px-2 py-1 text-sm text-white flex-1"
+                            placeholder="Enter reading name..."
+                            autoFocus
+                          />
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              startEditing(reading.id, reading.name || "")
-                            }}
-                            className="text-white/40 hover:text-white/70 transition-colors"
+                            onClick={() => handleSaveRename(reading.id)}
+                            className="text-green-400 hover:text-green-300 text-sm"
                           >
-                            <EditIcon className="w-4 h-4" />
+                            Save
+                          </button>
+                          <button onClick={handleCancelRename} className="text-red-400 hover:text-red-300 text-sm">
+                            Cancel
                           </button>
                         </div>
-                        <p className="text-xs text-white/50">
-                          {new Date(reading.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                        </p>
-                        {reading.question && <p className="text-xs text-white/60 italic mt-1">"{reading.question}"</p>}
-                      </>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleDelete(reading.id)}
-                    className="text-white/40 hover:text-white/70 transition-colors p-1"
-                    aria-label="Delete reading"
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {reading.charms.slice(0, 5).map((charm, idx) => {
-                    const CharmIcon = getCharmIcon(charm.name)
-                    const cosmicColor = getCosmicColor(charm.name)
-                    const isRare = charm.rarity === "rare"
-
-                    return (
-                      <div
-                        key={idx}
-                        className={`w-6 h-6 rounded-full flex items-center justify-center ${isRare ? "charm-rare-2d" : "charm-2d"}`}
-                        style={{
-                          backgroundColor: cosmicColor,
-                          transform: "scale(0.8)",
-                        }}
-                        title={charm.name}
-                      >
-                        <CharmIcon className="w-3 h-3 text-white" />
-                      </div>
-                    )
-                  })}
-                  {reading.charms.length > 5 && (
-                    <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs">
-                      +{reading.charms.length - 5}
+                      ) : (
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-medium text-white">
+                            {reading.name || `Reading ${reading.id.slice(-4)}`}
+                          </h3>
+                          <button
+                            onClick={() => handleRename(reading)}
+                            className="text-white/50 hover:text-white/70 text-xs"
+                          >
+                            rename
+                          </button>
+                        </div>
+                      )}
+                      <p className="text-sm text-white/70 mb-2">"{reading.question}"</p>
+                      <p className="text-xs text-white/50">{formatDate(reading.date)}</p>
                     </div>
-                  )}
-                </div>
-
-                {expandedReading === reading.id && (
-                  <div className="mt-3 pt-3 border-t border-white/10">
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2 ml-4">
                       <button
                         onClick={() => handleLoad(reading)}
-                        className="flex-1 py-2 rounded-lg transition-colors bg-white/10 hover:bg-white/20 text-white text-xs flex items-center justify-center gap-1"
+                        className="px-3 py-1 bg-purple-600/20 border border-purple-400/30 rounded text-xs text-purple-300 hover:bg-purple-600/30 transition-colors"
                       >
-                        Load Reading
+                        Load
                       </button>
                       <button
-                        onClick={() => handleSaveAsPDF(reading)}
-                        className="flex-1 py-2 rounded-lg transition-colors bg-white/10 hover:bg-white/20 text-white text-xs flex items-center justify-center gap-1"
+                        onClick={() => handleExportPDF(reading)}
+                        className="px-3 py-1 bg-blue-600/20 border border-blue-400/30 rounded text-xs text-blue-300 hover:bg-blue-600/30 transition-colors"
                       >
-                        <DownloadIcon className="w-4 h-4" />
-                        Save as PDF
+                        PDF
+                      </button>
+                      <button
+                        onClick={() => handleDelete(reading.id)}
+                        className="px-3 py-1 bg-red-600/20 border border-red-400/30 rounded text-xs text-red-300 hover:bg-red-600/30 transition-colors"
+                      >
+                        Delete
                       </button>
                     </div>
                   </div>
-                )}
-              </div>
-            ))}
+
+                  {/* Charm preview */}
+                  <div className="flex flex-wrap gap-2">
+                    {reading.charms.slice(0, 8).map((charm, index) => {
+                      const CharmIcon = getCharmIcon(charm.name)
+                      const charmColor = getCharmColor(charm.rarity)
+                      return (
+                        <div
+                          key={`${charm.name}-${index}`}
+                          className={`w-6 h-6 rounded-full flex items-center justify-center ${charmColor.bg} ${charmColor.border} border`}
+                          title={charm.name}
+                        >
+                          <CharmIcon className={`w-3 h-3 ${charmColor.text}`} />
+                        </div>
+                      )
+                    })}
+                    {reading.charms.length > 8 && (
+                      <div className="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+                        <span className="text-xs text-white/70">+{reading.charms.length - 8}</span>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         )}
-
-        <button
-          onClick={handleClose}
-          className="mt-4 px-6 py-2 border-2 border-white/20 rounded-full text-sm hover:bg-white/5 transition-colors mx-auto block"
-        >
-          back
-        </button>
-      </div>
+      </motion.div>
     </motion.div>
   )
 }
