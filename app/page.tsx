@@ -202,7 +202,7 @@ export default function Home() {
   })
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center bg-black text-white overflow-hidden pb-20">
+    <main className="relative flex min-h-screen flex-col items-center justify-center bg-black text-white overflow-hidden pb-32">
       <StarBackground />
 
       <h1 className="text-2xl font-extralight tracking-widest mb-6 z-10">starboard</h1>
@@ -249,7 +249,7 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="z-10 w-full flex flex-col items-center"
+            className="z-10 w-full flex flex-col items-center pb-8"
           >
             <div className="relative w-full max-w-md aspect-square mx-auto">
               <AstrologyWheel houses={contextualHouses} />
@@ -266,7 +266,8 @@ export default function Home() {
 
             <ReadingSynopsis charms={selectedCharms} houses={contextualHouses} question={question} />
 
-            <div className="flex flex-wrap gap-4 mt-8 justify-center">
+            {/* Action buttons with proper spacing from bottom nav */}
+            <div className="flex flex-wrap gap-4 mt-8 justify-center px-4 pb-4">
               <button
                 onClick={() => {
                   console.log("💾 Save reading button clicked")

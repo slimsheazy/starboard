@@ -19,14 +19,12 @@ interface CharmPosition {
   houseNumber: number
   houseName: string
   houseKeyword: string
+  charmIndex: number // Track which charm this is within the house
 }
 
 // Function to get a cosmic color based on charm name
 const getCosmicColor = (charmName: string): string => {
-  // Use the first character code to determine color
   const charCode = charmName.charCodeAt(0)
-
-  // Assign colors based on character code modulo 4
   if (charCode % 4 === 0) {
     return "var(--color-deep-purple)"
   } else if (charCode % 4 === 1) {
@@ -45,39 +43,82 @@ export default function CharmBoard({ charms, houses }: CharmBoardProps) {
   const [animationStates, setAnimationStates] = useState<string[]>([])
 
   useEffect(() => {
-    console.log("CharmBoard received charms:", charms.length)
+    console.log("🎯 CharmBoard received charms:", charms.length)
     if (charms.length === 0) return
 
-    // Calculate positions for each charm based on house positions
-    const newPositions = charms.map((_, index) => {
-      // Each charm is assigned to a house (12 charms, 12 houses)
-      const houseIndex = index % houses.length
-      const house = houses[houseIndex]
+    // Randomly distribute 12 charms across 12 houses (0-3 charms per house)
+    const houseAssignments = distributeCharmsToHouses(charms, houses)
+    console.log("🏠 House assignments:", houseAssignments)
 
-      // Calculate angle based on house position (counterclockwise from left)
-      const angle = 180 + houseIndex * -30 // Start at left (180 degrees) and go counterclockwise
-      const radians = (angle * Math.PI) / 180
+    // Calculate positions for each charm based on their house assignment
+    const newPositions = charms
+      .map((charm, charmIndex) => {
+        const assignment = houseAssignments.find((h) => h.charmIndices.includes(charmIndex))
+        if (!assignment) {
+          console.error("❌ No house assignment found for charm", charmIndex)
+          return null
+        }
 
-      // Add some randomness to the position within the house
-      // Keep charms inside the wheel by limiting radius to 15-40% from center
-      const randomRadius = 15 + Math.random() * 25
-      const randomAngleOffset = Math.random() * 20 - 10 // ±10 degrees
-      const finalRadians = ((angle + randomAngleOffset) * Math.PI) / 180
+        const house = houses[assignment.houseIndex]
+        const charmIndexInHouse = assignment.charmIndices.indexOf(charmIndex)
 
-      // Calculate final position
-      const x = 50 + randomRadius * Math.cos(finalRadians)
-      const y = 50 + randomRadius * Math.sin(finalRadians)
+        // Calculate base angle for this house (counterclockwise from left)
+        const baseAngle = 180 + assignment.houseIndex * -30
 
-      return {
-        x,
-        y,
-        houseNumber: house.number,
-        houseName: house.name,
-        houseKeyword: house.contextKeyword || house.keyword,
-      }
-    })
+        // Position charms within the house based on how many are in this house
+        const totalCharmsInHouse = assignment.charmIndices.length
+        let angleOffset = 0
+        let radiusOffset = 0
 
-    console.log("Setting positions for", newPositions.length, "charms")
+        if (totalCharmsInHouse === 1) {
+          // Single charm: center of house sector
+          angleOffset = 0
+          radiusOffset = 0
+        } else if (totalCharmsInHouse === 2) {
+          // Two charms: spread them out
+          angleOffset = charmIndexInHouse === 0 ? -8 : 8
+          radiusOffset = charmIndexInHouse === 0 ? -3 : 3
+        } else if (totalCharmsInHouse === 3) {
+          // Three charms: triangle formation
+          if (charmIndexInHouse === 0) {
+            angleOffset = 0
+            radiusOffset = -5
+          } else if (charmIndexInHouse === 1) {
+            angleOffset = -10
+            radiusOffset = 5
+          } else {
+            angleOffset = 10
+            radiusOffset = 5
+          }
+        }
+
+        // Add some randomness but keep it controlled
+        const randomAngleOffset = (Math.random() - 0.5) * 6 // ±3 degrees
+        const randomRadiusOffset = (Math.random() - 0.5) * 4 // ±2% radius
+
+        const finalAngle = baseAngle + angleOffset + randomAngleOffset
+        const finalRadians = (finalAngle * Math.PI) / 180
+
+        // Keep charms inside the wheel (15-40% from center)
+        const baseRadius = 25 + radiusOffset + randomRadiusOffset
+        const clampedRadius = Math.max(15, Math.min(40, baseRadius))
+
+        // Calculate final position
+        const x = 50 + clampedRadius * Math.cos(finalRadians)
+        const y = 50 + clampedRadius * Math.sin(finalRadians)
+
+        return {
+          x,
+          y,
+          houseNumber: house.number,
+          houseName: house.name,
+          houseKeyword: house.contextKeyword || house.keyword,
+          charmIndex: charmIndexInHouse,
+        }
+      })
+      .filter(Boolean) as CharmPosition[]
+
+    console.log("📍 Setting positions for", newPositions.length, "charms")
     setPositions(newPositions)
 
     // Set random animation states for each charm
@@ -88,8 +129,44 @@ export default function CharmBoard({ charms, houses }: CharmBoardProps) {
     setAnimationStates(newAnimationStates)
   }, [charms, houses])
 
+  // Function to randomly distribute charms to houses
+  const distributeCharmsToHouses = (charms: Charm[], houses: House[]) => {
+    const assignments: { houseIndex: number; charmIndices: number[] }[] = []
+
+    // Initialize all houses with empty arrays
+    for (let i = 0; i < houses.length; i++) {
+      assignments.push({ houseIndex: i, charmIndices: [] })
+    }
+
+    // Randomly assign each charm to a house (max 3 per house)
+    const availableHouses = [...Array(houses.length).keys()]
+
+    for (let charmIndex = 0; charmIndex < charms.length; charmIndex++) {
+      // Filter houses that still have room (less than 3 charms)
+      const housesWithRoom = availableHouses.filter((houseIndex) => assignments[houseIndex].charmIndices.length < 3)
+
+      if (housesWithRoom.length === 0) {
+        console.warn("⚠️ No houses with room available, this shouldn't happen with 12 charms and 12 houses")
+        break
+      }
+
+      // Randomly select a house with room
+      const selectedHouseIndex = housesWithRoom[Math.floor(Math.random() * housesWithRoom.length)]
+      assignments[selectedHouseIndex].charmIndices.push(charmIndex)
+    }
+
+    // Log the distribution
+    const distribution = assignments.map((assignment, index) => ({
+      house: houses[index].name,
+      charmCount: assignment.charmIndices.length,
+    }))
+    console.log("🎲 Charm distribution:", distribution)
+
+    return assignments
+  }
+
   const handleCharmClick = (charm: Charm, position: CharmPosition, event: React.MouseEvent) => {
-    console.log("Charm clicked:", charm.name)
+    console.log("✨ Charm clicked:", charm.name, "in", position.houseName)
 
     // Get the position relative to the viewport for the tooltip
     const rect = event.currentTarget.getBoundingClientRect()
@@ -104,19 +181,19 @@ export default function CharmBoard({ charms, houses }: CharmBoardProps) {
   }
 
   const closeTooltip = () => {
-    console.log("Closing charm tooltip")
+    console.log("🔒 Closing charm tooltip")
     setSelectedCharm(null)
   }
 
-  console.log("Rendering CharmBoard with", charms.length, "charms and", positions.length, "positions")
+  console.log("🎨 Rendering CharmBoard with", charms.length, "charms and", positions.length, "positions")
 
   if (charms.length === 0) {
-    console.log("No charms to display")
+    console.log("❌ No charms to display")
     return null
   }
 
   if (positions.length === 0) {
-    console.log("No positions calculated yet")
+    console.log("⏳ No positions calculated yet")
     return null
   }
 
@@ -124,7 +201,7 @@ export default function CharmBoard({ charms, houses }: CharmBoardProps) {
     <div className="absolute inset-0 w-full h-full">
       {charms.map((charm, index) => {
         if (!positions[index]) {
-          console.log("No position for charm", index)
+          console.log("❌ No position for charm", index)
           return null
         }
 

@@ -27,9 +27,13 @@ export default function ReadingSynopsis({ charms, houses, question }: ReadingSyn
   const [synopsisStyle, setSynopsisStyle] = useState<"mystical" | "practical" | "poetic">("mystical")
   const [isVisible, setIsVisible] = useState(false)
   const [selectedCombination, setSelectedCombination] = useState<any>(null)
+  const [houseDistribution, setHouseDistribution] = useState<{ [houseName: string]: number }>({})
 
   useEffect(() => {
     if (charms.length > 0) {
+      // Calculate house distribution for enhanced analysis
+      calculateHouseDistribution()
+
       const timer = setTimeout(() => {
         generateSynopsis()
         setIsVisible(true)
@@ -37,6 +41,44 @@ export default function ReadingSynopsis({ charms, houses, question }: ReadingSyn
       return () => clearTimeout(timer)
     }
   }, [charms, houses, question])
+
+  const calculateHouseDistribution = () => {
+    // Since we don't have direct house assignments in the props,
+    // we'll simulate the distribution based on the charm board logic
+    const distribution: { [houseName: string]: number } = {}
+
+    // Initialize all houses
+    houses.forEach((house) => {
+      distribution[house.name] = 0
+    })
+
+    // Simulate random distribution (this matches the CharmBoard logic)
+    const assignments: { houseIndex: number; charmCount: number }[] = []
+
+    // Initialize all houses with 0 charms
+    for (let i = 0; i < houses.length; i++) {
+      assignments.push({ houseIndex: i, charmCount: 0 })
+    }
+
+    // Randomly assign charms (matching CharmBoard logic)
+    for (let charmIndex = 0; charmIndex < charms.length; charmIndex++) {
+      const housesWithRoom = assignments.filter((assignment) => assignment.charmCount < 3)
+      if (housesWithRoom.length > 0) {
+        const selectedAssignment = housesWithRoom[Math.floor(Math.random() * housesWithRoom.length)]
+        selectedAssignment.charmCount++
+      }
+    }
+
+    // Convert to house names
+    assignments.forEach((assignment, index) => {
+      if (assignment.charmCount > 0) {
+        distribution[houses[index].name] = assignment.charmCount
+      }
+    })
+
+    console.log("🏠 House distribution for synopsis:", distribution)
+    setHouseDistribution(distribution)
+  }
 
   const generateSynopsis = () => {
     if (charms.length === 0) return
@@ -47,14 +89,26 @@ export default function ReadingSynopsis({ charms, houses, question }: ReadingSyn
 
     // Get dominant themes from charms
     const themes = extractThemes(charms)
-    const houseInfluences = getHouseInfluences(charms, houses)
+    const dominantHouses = getDominantHouses()
 
     // Enhanced context analysis
     const questionContext = analyzeQuestionContext(question)
 
-    // Generate more nuanced synopsis
-    const generatedSynopsis = createDetailedSynopsis(charms, themes, houseInfluences, questionContext, style)
+    // Generate more nuanced synopsis with house distribution
+    const generatedSynopsis = createDetailedSynopsis(charms, themes, dominantHouses, questionContext, style)
     setSynopsis(generatedSynopsis)
+  }
+
+  const getDominantHouses = () => {
+    // Get houses with the most charms
+    const sortedHouses = Object.entries(houseDistribution)
+      .filter(([_, count]) => count > 0)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3)
+      .map(([houseName, count]) => ({ houseName, count }))
+
+    console.log("🎯 Dominant houses:", sortedHouses)
+    return sortedHouses
   }
 
   const determineSynopsisStyle = (question: string, charms: Charm[]): "mystical" | "practical" | "poetic" => {
@@ -150,26 +204,10 @@ export default function ReadingSynopsis({ charms, houses, question }: ReadingSyn
     return "general"
   }
 
-  const getHouseInfluences = (charms: Charm[], houses: House[]) => {
-    const houseCharms: Record<string, Charm[]> = {}
-
-    charms.forEach((charm) => {
-      const house = houses.find((h) => h.charms?.includes(charm.name as unknown as string))
-      if (house) {
-        if (!houseCharms[house.name]) houseCharms[house.name] = []
-        houseCharms[house.name].push(charm)
-      }
-    })
-
-    return Object.entries(houseCharms)
-      .sort(([, a], [, b]) => b.length - a.length)
-      .slice(0, 3)
-  }
-
   const createDetailedSynopsis = (
     charms: Charm[],
     themes: string[],
-    houseInfluences: [string, Charm[]][],
+    dominantHouses: { houseName: string; count: number }[],
     context: any,
     style: "mystical" | "practical" | "poetic",
   ): string => {
@@ -178,13 +216,13 @@ export default function ReadingSynopsis({ charms, houses, question }: ReadingSyn
 
     let synopsis = opening + " "
 
+    // Add house distribution insight
+    if (dominantHouses.length > 0) {
+      synopsis += getHouseDistributionInsight(dominantHouses, style) + " "
+    }
+
     // Add context-specific insight
     synopsis += getContextualInsight(context, themes, style) + " "
-
-    // Add house influences
-    if (houseInfluences.length > 0) {
-      synopsis += getHouseInsight(houseInfluences[0], style) + " "
-    }
 
     // Add thematic analysis
     if (themes.length > 0) {
@@ -201,6 +239,31 @@ export default function ReadingSynopsis({ charms, houses, question }: ReadingSyn
     synopsis += getClosingGuidance(context, style)
 
     return synopsis
+  }
+
+  const getHouseDistributionInsight = (
+    dominantHouses: { houseName: string; count: number }[],
+    style: "mystical" | "practical" | "poetic",
+  ) => {
+    if (dominantHouses.length === 0) return ""
+
+    const topHouse = dominantHouses[0]
+    const hasMultipleCharms = topHouse.count > 1
+
+    switch (style) {
+      case "mystical":
+        return hasMultipleCharms
+          ? `The ${topHouse.houseName.toLowerCase()} realm draws ${topHouse.count} charms, creating a powerful focal point of energy.`
+          : `Energy flows through various houses, creating a balanced cosmic pattern.`
+      case "practical":
+        return hasMultipleCharms
+          ? `Focus on ${topHouse.houseName.toLowerCase()} matters, as ${topHouse.count} charms highlight this area's importance.`
+          : `The even distribution suggests multiple areas require attention.`
+      case "poetic":
+        return hasMultipleCharms
+          ? `In the garden of ${topHouse.houseName.toLowerCase()}, ${topHouse.count} flowers bloom with concentrated meaning.`
+          : `Like scattered seeds across fertile ground, the charms spread their wisdom evenly.`
+    }
   }
 
   const getStyleOpenings = (style: "mystical" | "practical" | "poetic") => {
@@ -262,20 +325,6 @@ export default function ReadingSynopsis({ charms, houses, question }: ReadingSyn
     }
 
     return categoryInsights[context.category]?.[style] || categoryInsights.general[style]
-  }
-
-  const getHouseInsight = (houseInfluence: [string, Charm[]], style: "mystical" | "practical" | "poetic") => {
-    const [houseName, houseCharms] = houseInfluence
-    const charmCount = houseCharms.length
-
-    switch (style) {
-      case "mystical":
-        return `The ${houseName} realm holds ${charmCount > 1 ? "multiple keys" : "a significant key"} to understanding your path.`
-      case "practical":
-        return `Focus on ${houseName.toLowerCase()} matters, as ${charmCount > 1 ? "several factors" : "an important factor"} emerges here.`
-      case "poetic":
-        return `In the house of ${houseName.toLowerCase()}, ${charmCount > 1 ? "many flowers bloom" : "a single flower blooms"} with meaning for your journey.`
-    }
   }
 
   const getThematicInsight = (themes: string[], charms: Charm[], style: "mystical" | "practical" | "poetic") => {
@@ -368,6 +417,29 @@ export default function ReadingSynopsis({ charms, houses, question }: ReadingSyn
         >
           {synopsis}
         </motion.p>
+
+        {/* House Distribution Summary */}
+        {Object.keys(houseDistribution).length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="border-t border-white/10 pt-3 mb-4"
+          >
+            <h4 className="text-xs font-medium text-white/70 mb-2 tracking-wide">Energy Distribution</h4>
+            <div className="flex flex-wrap gap-1">
+              {Object.entries(houseDistribution)
+                .filter(([_, count]) => count > 0)
+                .sort(([, a], [, b]) => b - a)
+                .slice(0, 4)
+                .map(([houseName, count]) => (
+                  <span key={houseName} className="px-2 py-1 bg-white/10 rounded-full text-xs text-white/70">
+                    {houseName.replace(" House", "")}: {count}
+                  </span>
+                ))}
+            </div>
+          </motion.div>
+        )}
 
         {combinations.length > 0 && (
           <motion.div
