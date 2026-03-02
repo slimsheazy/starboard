@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import "./globals.css"
 import SoundEffects from "@/components/sound-effects"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export const metadata: Metadata = {
   title: "Starboard",
@@ -27,6 +28,7 @@ export default function RootLayout({
         <div className="fixed top-4 right-4 z-30">
           <SoundEffects />
         </div>
+        <SpeedInsights />
       </body>
     </html>
   )
