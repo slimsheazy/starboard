@@ -6,399 +6,292 @@ import type { Charm, House } from "@/lib/types"
 import { findCharmCombinations } from "@/lib/charm-combinations"
 import CombinationDetails from "./combination-details"
 
-// Safe keyword extractor – falls back to words in name + description
-function getKeywords(charm: Charm): string[] {
-  // @ts-ignore – legacy charms may not have a `keywords` field
-  const explicit = (charm.keywords as string[] | undefined) ?? []
-  if (explicit.length) return explicit.map((k) => k.toLowerCase())
-
-  // derive keywords from name + description
-  return `${charm.name} ${charm.description}`.toLowerCase().split(/\W+/).filter(Boolean)
-}
-
 interface ReadingSynopsisProps {
   charms: Charm[]
   houses: House[]
   question: string
 }
 
+/* ------------------------------------------------------------------ */
+/*  Helpers: classify the question & charms so the synopsis can speak  */
+/*  directly to what the user asked                                    */
+/* ------------------------------------------------------------------ */
+
+type Category =
+  | "career"
+  | "relationships"
+  | "financial"
+  | "health"
+  | "family"
+  | "spiritual"
+  | "decision"
+  | "general"
+
+type Tone = "cautionary" | "encouraging" | "transformative" | "mixed"
+
+function detectCategory(q: string): Category {
+  const l = q.toLowerCase()
+  if (/\b(career|job|work|business|promotion|interview|boss|coworker|profession|employ)/i.test(l)) return "career"
+  if (/\b(love|relationship|partner|romance|dating|marriage|breakup|ex |crush|soulmate)/i.test(l)) return "relationships"
+  if (/\b(money|financ|wealth|income|debt|saving|invest|salary|budget)/i.test(l)) return "financial"
+  if (/\b(health|wellness|healing|illness|fitness|diet|medical|mental|anxiety|depress)/i.test(l)) return "health"
+  if (/\b(family|home|parent|child|mother|father|sibling|son|daughter)/i.test(l)) return "family"
+  if (/\b(spirit|soul|meaning|purpose|faith|meditat|pray|divine|karma)/i.test(l)) return "spiritual"
+  if (/\b(should i|decide|choice|choose|option|which|or )/i.test(l)) return "decision"
+  return "general"
+}
+
+function classifyCharmTone(c: Charm): "positive" | "cautionary" | "neutral" {
+  const words = `${c.name} ${c.description}`.toLowerCase()
+  if (/stop|caution|obstacle|block|closed|wrong|thin ice|fog|interference|red light|locked|leak|friction|quicksand|undertow|shadow|mask|mirage|storm|void|dark night|shattered/.test(words))
+    return "cautionary"
+  if (/flow|shortcut|green|breakthrough|anchor|compass|sunrise|bridge|harvest|spark|oasis|key|second wind|jumpstart|cosmic align|golden thread|phoenix|synchronicity|stargate/.test(words))
+    return "positive"
+  return "neutral"
+}
+
+function overallTone(charms: Charm[]): Tone {
+  let pos = 0
+  let caut = 0
+  charms.forEach((c) => {
+    const t = classifyCharmTone(c)
+    if (t === "positive") pos++
+    if (t === "cautionary") caut++
+  })
+  if (pos >= 5 && caut <= 2) return "encouraging"
+  if (caut >= 5 && pos <= 2) return "cautionary"
+  if (pos >= 3 && caut >= 3) return "mixed"
+  return "transformative"
+}
+
+/** Pick n random items from arr */
+function pick<T>(arr: T[], n: number): T[] {
+  const copy = [...arr]
+  const result: T[] = []
+  while (result.length < n && copy.length > 0) {
+    const idx = Math.floor(Math.random() * copy.length)
+    result.push(copy.splice(idx, 1)[0])
+  }
+  return result
+}
+
+/* ------------------------------------------------------------------ */
+/*  Core synopsis builder - references the actual question & charms    */
+/* ------------------------------------------------------------------ */
+
+function buildSynopsis(question: string, charms: Charm[], houses: House[]): string {
+  const category = detectCategory(question)
+  const tone = overallTone(charms)
+  const combinations = findCharmCombinations(charms)
+
+  const positiveCharms = charms.filter((c) => classifyCharmTone(c) === "positive")
+  const cautionaryCharms = charms.filter((c) => classifyCharmTone(c) === "cautionary")
+  const neutralCharms = charms.filter((c) => classifyCharmTone(c) === "neutral")
+
+  // Select featured charms to reference by name
+  const featured = pick(charms, 4)
+  const parts: string[] = []
+
+  // 1. Opening - reference the question directly
+  parts.push(buildOpening(question, category, tone))
+
+  // 2. Highlight specific charms that appeared
+  parts.push(buildCharmHighlights(featured, category, question))
+
+  // 3. Address positive signals
+  if (positiveCharms.length > 0) {
+    const names = pick(positiveCharms, Math.min(3, positiveCharms.length)).map((c) => c.name)
+    parts.push(buildPositiveSection(names, category))
+  }
+
+  // 4. Address warnings / caution
+  if (cautionaryCharms.length > 0) {
+    const names = pick(cautionaryCharms, Math.min(2, cautionaryCharms.length)).map((c) => c.name)
+    parts.push(buildCautionSection(names, category))
+  }
+
+  // 5. Combination insight (use the rich interpretation from charm-combinations)
+  if (combinations.length > 0) {
+    const best = combinations[0]
+    parts.push(
+      `The ${best.name} combination (${best.charms.join(" + ")}) is especially significant: ${best.interpretation.split(".").slice(0, 2).join(".")}.`
+    )
+  }
+
+  // 6. Closing guidance tied to the question
+  parts.push(buildClosing(question, category, tone, charms))
+
+  return parts.join(" ")
+}
+
+/* ---- Opening ---- */
+function buildOpening(question: string, category: Category, tone: Tone): string {
+  const hasQuestion = question.trim().length > 0
+
+  if (!hasQuestion) {
+    const general: Record<Tone, string> = {
+      encouraging: "The charms cast a bright pattern today - the cosmos is signaling forward momentum in your life.",
+      cautionary: "The charms carry a serious tone today - there are areas in your life calling for careful attention.",
+      transformative: "A powerful shift is emerging in this reading - the charms point toward deep change ahead.",
+      mixed: "Your reading holds both promise and caution - a nuanced picture is forming.",
+    }
+    return general[tone]
+  }
+
+  // With a question, reference it directly
+  const categoryOpeners: Record<Category, Record<Tone, string>> = {
+    career: {
+      encouraging: `Regarding your question about your career - the charms are overwhelmingly supportive. The energy around your professional life is opening up.`,
+      cautionary: `Your question about work draws a reading that urges caution. Not every opportunity in front of you is what it seems.`,
+      transformative: `Your career question has summoned charms of deep transformation. The professional path you know may be giving way to something very different.`,
+      mixed: `The charms give a complex answer to your career question - there are doors opening and doors closing simultaneously.`,
+    },
+    relationships: {
+      encouraging: `In answer to your question about love - the charms are warm and affirming. Connection is favored right now.`,
+      cautionary: `Your question about relationships draws a protective reading. The charms are asking you to look more carefully at the dynamics around you.`,
+      transformative: `The charms answer your relationship question with a call for transformation. The way you connect with others is evolving.`,
+      mixed: `Your love question receives a layered response - both tenderness and tension are present in the charms.`,
+    },
+    financial: {
+      encouraging: `Regarding your financial question - the charms align favorably. Resources and opportunities are flowing in your direction.`,
+      cautionary: `Your money question draws a cautious reading. The charms urge you to scrutinize the details before making moves.`,
+      transformative: `The charms answer your financial question with signals of major change. Your relationship with resources is shifting.`,
+      mixed: `Your financial question gets a nuanced answer - there is potential for growth, but also areas requiring vigilance.`,
+    },
+    health: {
+      encouraging: `In response to your health question - the charms show healing energy and renewal. Your body and mind are moving toward balance.`,
+      cautionary: `Your health question draws a reading that emphasizes awareness. The charms are asking you to pay closer attention to signals from your body.`,
+      transformative: `The charms answer your health question with a theme of metamorphosis. A new chapter in your wellbeing is beginning.`,
+      mixed: `Your health question receives a balanced reading - there are areas of strength and areas that need more care.`,
+    },
+    family: {
+      encouraging: `Regarding your family question - the charms radiate warmth and connection. Bonds are strengthening around you.`,
+      cautionary: `Your family question draws a reading that asks for patience. There are undercurrents within your household that need gentle attention.`,
+      transformative: `The charms answer your family question with themes of deep change. Family dynamics are rearranging themselves.`,
+      mixed: `Your question about family draws a complex picture - love is present but so are growing pains.`,
+    },
+    spiritual: {
+      encouraging: `In answer to your spiritual question - the charms resonate with alignment. You are closer to your truth than you realize.`,
+      cautionary: `Your spiritual question draws a grounding reading. The charms suggest the answers you seek require patience, not rushing.`,
+      transformative: `The charms answer your spiritual question with deep intensity. A significant awakening or shift in understanding is at hand.`,
+      mixed: `Your spiritual inquiry receives a multifaceted response - expansion and uncertainty coexist in this moment.`,
+    },
+    decision: {
+      encouraging: `Regarding your decision - the charms lean in a clear direction. The energy supports forward movement.`,
+      cautionary: `Your question about this choice draws a cautious reading. The charms suggest you don't have all the information yet.`,
+      transformative: `The charms respond to your decision with a message of radical change. Whatever you choose, things will look very different after.`,
+      mixed: `Your decision question draws a balanced reading - both paths have merit, but only one aligns with your deeper truth.`,
+    },
+    general: {
+      encouraging: `The charms respond to your question with bright, forward energy. The path ahead looks open and supportive.`,
+      cautionary: `Your question draws a cautious reading from the charms. There are factors you may not yet see that deserve attention.`,
+      transformative: `The charms answer your question with transformative intensity. Something in your life is ready to change shape entirely.`,
+      mixed: `Your question receives a layered reading - the charms hold both encouragement and important warnings.`,
+    },
+  }
+
+  return categoryOpeners[category]?.[tone] ?? categoryOpeners.general[tone]
+}
+
+/* ---- Charm highlights - reference actual drawn charms ---- */
+function buildCharmHighlights(featured: Charm[], category: Category, question: string): string {
+  if (featured.length === 0) return ""
+
+  const lines: string[] = []
+
+  featured.forEach((charm) => {
+    const tone = classifyCharmTone(charm)
+
+    if (tone === "positive") {
+      lines.push(
+        `${charm.name} appeared in your spread - "${charm.description.toLowerCase()}" - reinforcing that things are moving in your favor.`
+      )
+    } else if (tone === "cautionary") {
+      lines.push(
+        `${charm.name} landed in your reading as well, a signal to "${charm.description.toLowerCase()}" before proceeding.`
+      )
+    } else {
+      lines.push(
+        `${charm.name} ("${charm.description.toLowerCase()}") adds depth and nuance to the picture.`
+      )
+    }
+  })
+
+  // Return 2-3 of them to keep it concise
+  return lines.slice(0, 3).join(" ")
+}
+
+/* ---- Positive section ---- */
+function buildPositiveSection(names: string[], category: Category): string {
+  const list = names.join(", ")
+  const categoryHints: Record<Category, string> = {
+    career: `Charms like ${list} point toward professional momentum and recognition.`,
+    relationships: `With ${list} in the reading, the energy around your connections is warm and receptive.`,
+    financial: `${list} signal favorable conditions for financial growth and stability.`,
+    health: `The presence of ${list} suggests your body and spirit are in a cycle of recovery and strength.`,
+    family: `${list} bring a sense of harmony and deepening bonds within your family circle.`,
+    spiritual: `${list} indicate you're entering a period of heightened intuition and inner clarity.`,
+    decision: `${list} tip the scales toward a positive outcome if you trust the direction they suggest.`,
+    general: `The encouraging presence of ${list} signals forward movement and support from the universe.`,
+  }
+  return categoryHints[category] ?? categoryHints.general
+}
+
+/* ---- Caution section ---- */
+function buildCautionSection(names: string[], category: Category): string {
+  const list = names.join(" and ")
+  const categoryHints: Record<Category, string> = {
+    career: `However, ${list} in your spread warn against rushing into professional commitments without due diligence.`,
+    relationships: `But ${list} serve as a reminder - not everything is as it appears on the surface. Guard your boundaries.`,
+    financial: `${list} urge caution with finances right now. Read the fine print and watch for hidden costs.`,
+    health: `${list} are a gentle warning to not ignore what your body is telling you. Rest and reassessment are needed.`,
+    family: `${list} suggest unresolved tension beneath the surface of family dynamics. Address it before it grows.`,
+    spiritual: `${list} remind you that spiritual growth sometimes requires confronting uncomfortable truths.`,
+    decision: `${list} caution that there may be information you're missing. Slow down and investigate further.`,
+    general: `${list} introduce a note of caution - pay attention to what feels "off" and don't ignore your instincts.`,
+  }
+  return categoryHints[category] ?? categoryHints.general
+}
+
+/* ---- Closing guidance ---- */
+function buildClosing(question: string, category: Category, tone: Tone, charms: Charm[]): string {
+  const rareCharms = charms.filter((c) => c.rarity === "rare")
+  const hasRare = rareCharms.length > 0
+
+  let rareNote = ""
+  if (hasRare) {
+    const rareNames = rareCharms.map((c) => c.name).join(", ")
+    rareNote = ` The rare appearance of ${rareNames} amplifies the power of this reading considerably.`
+  }
+
+  const closings: Record<Tone, string> = {
+    encouraging: `Overall, the charms favor bold, confident action. Trust the momentum.${rareNote}`,
+    cautionary: `The overarching message is to slow down, look closely, and protect yourself before making moves.${rareNote}`,
+    transformative: `This reading signals a turning point - embrace the change rather than resisting it.${rareNote}`,
+    mixed: `The charms ask you to hold both optimism and discernment at once - move forward, but with your eyes open.${rareNote}`,
+  }
+
+  return closings[tone]
+}
+
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
+
 export default function ReadingSynopsis({ charms, houses, question }: ReadingSynopsisProps) {
   const [synopsis, setSynopsis] = useState<string>("")
-  const [synopsisStyle, setSynopsisStyle] = useState<"mystical" | "practical" | "poetic">("mystical")
   const [isVisible, setIsVisible] = useState(false)
-  const [selectedCombination, setSelectedCombination] = useState<any>(null)
-  const [houseDistribution, setHouseDistribution] = useState<{ [houseName: string]: number }>({})
+  const [selectedCombination, setSelectedCombination] = useState<ReturnType<typeof findCharmCombinations>[number] | null>(null)
 
   useEffect(() => {
     if (charms.length > 0) {
-      // Calculate house distribution for enhanced analysis
-      calculateHouseDistribution()
-
       const timer = setTimeout(() => {
-        generateSynopsis()
+        setSynopsis(buildSynopsis(question, charms, houses))
         setIsVisible(true)
       }, 1500)
       return () => clearTimeout(timer)
     }
   }, [charms, houses, question])
-
-  const calculateHouseDistribution = () => {
-    // Since we don't have direct house assignments in the props,
-    // we'll simulate the distribution based on the charm board logic
-    const distribution: { [houseName: string]: number } = {}
-
-    // Initialize all houses
-    houses.forEach((house) => {
-      distribution[house.name] = 0
-    })
-
-    // Simulate random distribution (this matches the CharmBoard logic)
-    const assignments: { houseIndex: number; charmCount: number }[] = []
-
-    // Initialize all houses with 0 charms
-    for (let i = 0; i < houses.length; i++) {
-      assignments.push({ houseIndex: i, charmCount: 0 })
-    }
-
-    // Randomly assign charms (matching CharmBoard logic)
-    for (let charmIndex = 0; charmIndex < charms.length; charmIndex++) {
-      const housesWithRoom = assignments.filter((assignment) => assignment.charmCount < 3)
-      if (housesWithRoom.length > 0) {
-        const selectedAssignment = housesWithRoom[Math.floor(Math.random() * housesWithRoom.length)]
-        selectedAssignment.charmCount++
-      }
-    }
-
-    // Convert to house names
-    assignments.forEach((assignment, index) => {
-      if (assignment.charmCount > 0) {
-        distribution[houses[index].name] = assignment.charmCount
-      }
-    })
-
-    console.log("🏠 House distribution for synopsis:", distribution)
-    setHouseDistribution(distribution)
-  }
-
-  const generateSynopsis = () => {
-    if (charms.length === 0) return
-
-    // Determine synopsis style based on question content and charm types
-    const style = determineSynopsisStyle(question, charms)
-    setSynopsisStyle(style)
-
-    // Get dominant themes from charms
-    const themes = extractThemes(charms)
-    const dominantHouses = getDominantHouses()
-
-    // Enhanced context analysis
-    const questionContext = analyzeQuestionContext(question)
-
-    // Generate more nuanced synopsis with house distribution
-    const generatedSynopsis = createDetailedSynopsis(charms, themes, dominantHouses, questionContext, style)
-    setSynopsis(generatedSynopsis)
-  }
-
-  const getDominantHouses = () => {
-    // Get houses with the most charms
-    const sortedHouses = Object.entries(houseDistribution)
-      .filter(([_, count]) => count > 0)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 3)
-      .map(([houseName, count]) => ({ houseName, count }))
-
-    console.log("🎯 Dominant houses:", sortedHouses)
-    return sortedHouses
-  }
-
-  const determineSynopsisStyle = (question: string, charms: Charm[]): "mystical" | "practical" | "poetic" => {
-    const questionLower = question.toLowerCase()
-
-    // Practical style for action-oriented questions
-    if (/\b(should i|how do i|what steps|when will|can i|will i)\b/.test(questionLower)) {
-      return "practical"
-    }
-
-    // Poetic style for emotional/spiritual questions
-    if (/\b(feel|heart|soul|love|spirit|meaning|purpose)\b/.test(questionLower)) {
-      return "poetic"
-    }
-
-    // Consider charm types
-    const practicalCharms = charms.filter((c) =>
-      getKeywords(c).some((k) => /action|work|decision|change|progress/.test(k)),
-    ).length
-
-    const emotionalCharms = charms.filter((c) =>
-      getKeywords(c).some((k) => /love|heart|emotion|feeling|intuition/.test(k)),
-    ).length
-
-    if (practicalCharms > emotionalCharms) return "practical"
-    if (emotionalCharms > practicalCharms) return "poetic"
-
-    return "mystical"
-  }
-
-  const analyzeQuestionContext = (question: string) => {
-    const context = {
-      category: "general",
-      urgency: "moderate",
-      scope: "personal",
-      timeframe: "present",
-    }
-
-    const questionLower = question.toLowerCase()
-
-    // Determine category
-    if (/\b(career|job|work|business)\b/.test(questionLower)) context.category = "career"
-    else if (/\b(love|relationship|partner|romance)\b/.test(questionLower)) context.category = "relationships"
-    else if (/\b(money|finance|wealth|income)\b/.test(questionLower)) context.category = "financial"
-    else if (/\b(health|wellness|healing)\b/.test(questionLower)) context.category = "health"
-    else if (/\b(family|home|parent|child)\b/.test(questionLower)) context.category = "family"
-    else if (/\b(spirit|soul|meaning|purpose)\b/.test(questionLower)) context.category = "spiritual"
-
-    // Determine urgency
-    if (/\b(urgent|now|immediately|asap|quickly)\b/.test(questionLower)) context.urgency = "high"
-    else if (/\b(future|eventually|someday|later)\b/.test(questionLower)) context.urgency = "low"
-
-    // Determine scope
-    if (/\b(we|us|our|together|family|group)\b/.test(questionLower)) context.scope = "collective"
-
-    // Determine timeframe
-    if (/\b(will|future|next|coming|ahead)\b/.test(questionLower)) context.timeframe = "future"
-    else if (/\b(past|was|were|before|previous)\b/.test(questionLower)) context.timeframe = "past"
-
-    return context
-  }
-
-  const extractThemes = (charms: Charm[]) => {
-    const themeCount: Record<string, number> = {}
-
-    charms.forEach((charm) => {
-      getKeywords(charm).forEach((keyword) => {
-        const theme = categorizeKeyword(keyword)
-        themeCount[theme] = (themeCount[theme] || 0) + 1
-      })
-    })
-
-    return Object.entries(themeCount)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 3)
-      .map(([theme]) => theme)
-  }
-
-  const categorizeKeyword = (keyword: string): string => {
-    const keywordLower = keyword.toLowerCase()
-
-    if (/love|heart|emotion|feeling|passion|romance/.test(keywordLower)) return "emotional"
-    if (/action|change|movement|progress|growth|transformation/.test(keywordLower)) return "action"
-    if (/wisdom|knowledge|insight|understanding|clarity|truth/.test(keywordLower)) return "wisdom"
-    if (/challenge|obstacle|difficulty|conflict|struggle/.test(keywordLower)) return "challenge"
-    if (/opportunity|potential|possibility|chance|opening/.test(keywordLower)) return "opportunity"
-    if (/balance|harmony|peace|stability|equilibrium/.test(keywordLower)) return "balance"
-    if (/intuition|spirit|soul|divine|mystical|psychic/.test(keywordLower)) return "spiritual"
-    if (/communication|expression|voice|message|connection/.test(keywordLower)) return "communication"
-    if (/creativity|art|inspiration|imagination|innovation/.test(keywordLower)) return "creativity"
-    if (/protection|safety|security|boundaries|defense/.test(keywordLower)) return "protection"
-
-    return "general"
-  }
-
-  const createDetailedSynopsis = (
-    charms: Charm[],
-    themes: string[],
-    dominantHouses: { houseName: string; count: number }[],
-    context: any,
-    style: "mystical" | "practical" | "poetic",
-  ): string => {
-    const openings = getStyleOpenings(style)
-    const opening = openings[Math.floor(Math.random() * openings.length)]
-
-    let synopsis = opening + " "
-
-    // Add house distribution insight
-    if (dominantHouses.length > 0) {
-      synopsis += getHouseDistributionInsight(dominantHouses, style) + " "
-    }
-
-    // Add context-specific insight
-    synopsis += getContextualInsight(context, themes, style) + " "
-
-    // Add thematic analysis
-    if (themes.length > 0) {
-      synopsis += getThematicInsight(themes, charms, style) + " "
-    }
-
-    // Add guidance based on charm combinations
-    const combinations = findCharmCombinations(charms)
-    if (combinations.length > 0) {
-      synopsis += getCombinationInsight(combinations[0], style) + " "
-    }
-
-    // Add closing guidance
-    synopsis += getClosingGuidance(context, style)
-
-    return synopsis
-  }
-
-  const getHouseDistributionInsight = (
-    dominantHouses: { houseName: string; count: number }[],
-    style: "mystical" | "practical" | "poetic",
-  ) => {
-    if (dominantHouses.length === 0) return ""
-
-    const topHouse = dominantHouses[0]
-    const hasMultipleCharms = topHouse.count > 1
-
-    switch (style) {
-      case "mystical":
-        return hasMultipleCharms
-          ? `The ${topHouse.houseName.toLowerCase()} realm draws ${topHouse.count} charms, creating a powerful focal point of energy.`
-          : `Energy flows through various houses, creating a balanced cosmic pattern.`
-      case "practical":
-        return hasMultipleCharms
-          ? `Focus on ${topHouse.houseName.toLowerCase()} matters, as ${topHouse.count} charms highlight this area's importance.`
-          : `The even distribution suggests multiple areas require attention.`
-      case "poetic":
-        return hasMultipleCharms
-          ? `In the garden of ${topHouse.houseName.toLowerCase()}, ${topHouse.count} flowers bloom with concentrated meaning.`
-          : `Like scattered seeds across fertile ground, the charms spread their wisdom evenly.`
-    }
-  }
-
-  const getStyleOpenings = (style: "mystical" | "practical" | "poetic") => {
-    switch (style) {
-      case "mystical":
-        return [
-          "The cosmic currents reveal a tapestry of energies surrounding your inquiry.",
-          "Ancient wisdom whispers through the alignment of these mystical symbols.",
-          "The universe has woven a complex pattern of guidance for your path.",
-          "Ethereal forces converge to illuminate the depths of your question.",
-          "The celestial dance of energies unveils hidden truths within your situation.",
-        ]
-      case "practical":
-        return [
-          "Your reading reveals clear patterns that can guide your next steps.",
-          "The charms present a roadmap for navigating your current situation.",
-          "Practical wisdom emerges from this configuration of energies.",
-          "The symbols align to offer concrete guidance for your path forward.",
-          "This reading provides actionable insights for your circumstances.",
-        ]
-      case "poetic":
-        return [
-          "Like verses written in starlight, your reading speaks of deep currents flowing through your life.",
-          "The heart of your question blooms like a flower in the garden of possibility.",
-          "Your soul's inquiry dances with the rhythm of cosmic understanding.",
-          "In the poetry of symbols, your story unfolds with grace and meaning.",
-          "The language of the heart translates through these sacred signs.",
-        ]
-    }
-  }
-
-  const getContextualInsight = (context: any, themes: string[], style: "mystical" | "practical" | "poetic") => {
-    const categoryInsights = {
-      career: {
-        mystical: "Professional energies swirl with potential for transformation and growth.",
-        practical: "Your career path shows opportunities for strategic advancement.",
-        poetic: "Your work life yearns for authentic expression and purposeful direction.",
-      },
-      relationships: {
-        mystical: "The threads of connection weave through multiple dimensions of understanding.",
-        practical: "Relationship dynamics indicate areas for clear communication and mutual growth.",
-        poetic: "Love's tender wisdom flows through the chambers of your heart's deepest questions.",
-      },
-      financial: {
-        mystical: "Material energies seek balance between abundance and spiritual values.",
-        practical: "Financial patterns suggest practical steps toward greater stability.",
-        poetic: "The river of prosperity flows when aligned with your soul's true purpose.",
-      },
-      spiritual: {
-        mystical: "Sacred energies call for deeper communion with your inner wisdom.",
-        practical: "Spiritual growth requires grounded practices and consistent dedication.",
-        poetic: "Your spirit soars on wings of ancient knowing and divine connection.",
-      },
-      general: {
-        mystical: "Universal energies converge to address the core of your inquiry.",
-        practical: "The situation calls for balanced consideration of multiple factors.",
-        poetic: "Life's grand symphony plays the notes of your heart's deepest longing.",
-      },
-    }
-
-    return categoryInsights[context.category]?.[style] || categoryInsights.general[style]
-  }
-
-  const getThematicInsight = (themes: string[], charms: Charm[], style: "mystical" | "practical" | "poetic") => {
-    const primaryTheme = themes[0]
-    const themeInsights = {
-      emotional: {
-        mystical: "Emotional currents run deep, requiring both courage and compassion to navigate.",
-        practical: "Emotional intelligence and clear boundaries will serve you well in this situation.",
-        poetic: "The heart's wisdom speaks in whispers that only stillness can hear.",
-      },
-      action: {
-        mystical: "The time for movement approaches, guided by inner knowing and outer signs.",
-        practical: "Decisive action is favored, but ensure your steps are well-considered.",
-        poetic: "Your soul calls for movement, like a river seeking its destined sea.",
-      },
-      wisdom: {
-        mystical: "Ancient knowledge surfaces to illuminate your present circumstances.",
-        practical: "Learning and understanding are your greatest tools in this situation.",
-        poetic: "Wisdom flows like honey from the comb of experience and insight.",
-      },
-      challenge: {
-        mystical: "Obstacles serve as teachers, each one holding gifts of strength and understanding.",
-        practical: "Challenges present opportunities for growth and skill development.",
-        poetic: "Every mountain climbed reveals new vistas of possibility and strength.",
-      },
-      opportunity: {
-        mystical: "Doorways of possibility shimmer with potential, awaiting your recognition.",
-        practical: "Multiple opportunities are available; timing and preparation are key.",
-        poetic: "Opportunity dances at the edge of vision, inviting bold and graceful steps.",
-      },
-    }
-
-    return (
-      themeInsights[primaryTheme]?.[style] || "The energies present offer both challenge and opportunity for growth."
-    )
-  }
-
-  const getCombinationInsight = (combination: any, style: "mystical" | "practical" | "poetic") => {
-    if (!combination) return ""
-
-    switch (style) {
-      case "mystical":
-        return `The mystical union of ${combination.charms.join(" and ")} creates a powerful portal of transformation.`
-      case "practical":
-        return `The combination of ${combination.charms.join(" and ")} suggests a balanced approach to your situation.`
-      case "poetic":
-        return `Where ${combination.charms.join(" meets ")} in sacred dance, new possibilities are born.`
-    }
-  }
-
-  const getClosingGuidance = (context: any, style: "mystical" | "practical" | "poetic") => {
-    const urgencyGuidance = {
-      high: {
-        mystical: "Trust your intuition to guide swift but wise action.",
-        practical: "Act decisively while remaining open to course corrections.",
-        poetic: "Let urgency be tempered by the wisdom of your deepest knowing.",
-      },
-      moderate: {
-        mystical: "Allow the natural rhythm of unfolding to guide your timing.",
-        practical: "Take measured steps while remaining alert to changing circumstances.",
-        poetic: "Move with the grace of seasons, neither rushing nor delaying what must come.",
-      },
-      low: {
-        mystical: "Patience and contemplation will reveal the perfect moment for action.",
-        practical: "Use this time for planning and preparation before moving forward.",
-        poetic: "In the garden of time, some seeds need seasons of quiet growth before blooming.",
-      },
-    }
-
-    return (
-      urgencyGuidance[context.urgency]?.[style] ||
-      "Trust in the wisdom of your journey and the guidance that surrounds you."
-    )
-  }
 
   const combinations = charms.length > 0 ? findCharmCombinations(charms) : []
 
@@ -417,29 +310,6 @@ export default function ReadingSynopsis({ charms, houses, question }: ReadingSyn
         >
           {synopsis}
         </motion.p>
-
-        {/* House Distribution Summary */}
-        {Object.keys(houseDistribution).length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="border-t border-white/10 pt-3 mb-4"
-          >
-            <h4 className="text-xs font-medium text-white/70 mb-2 tracking-wide">Energy Distribution</h4>
-            <div className="flex flex-wrap gap-1">
-              {Object.entries(houseDistribution)
-                .filter(([_, count]) => count > 0)
-                .sort(([, a], [, b]) => b - a)
-                .slice(0, 4)
-                .map(([houseName, count]) => (
-                  <span key={houseName} className="px-2 py-1 bg-white/10 rounded-full text-xs text-white/70">
-                    {houseName.replace(" House", "")}: {count}
-                  </span>
-                ))}
-            </div>
-          </motion.div>
-        )}
 
         {combinations.length > 0 && (
           <motion.div

@@ -69,10 +69,7 @@ export default function UserInputForm({ question, setQuestion, onSubmit }: UserI
         {isSubmitting ? "Consulting the stars..." : "begin divination"}
       </motion.button>
 
-      {/* Debug info */}
-      <div className="text-xs text-white/30 text-center">
-        Debug: canSubmit={String(canSubmit)}, isSubmitting={String(isSubmitting)}
-      </div>
+
     </motion.form>
   )
 }
