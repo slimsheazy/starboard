@@ -101,7 +101,7 @@ function normalizeCharmName(name: string): string {
 export default function ReadingSynopsis({ charms, houses, question, houseAssignments }: ReadingSynopsisProps) {
   const [synopsis, setSynopsis] = useState<string[]>([])
   const [isVisible, setIsVisible] = useState(false)
-  const [selectedCombination, setSelectedCombination] = useState<any>(null)
+  const [selectedCombination, setSelectedCombination] = useState<CharmCombination | null>(null)
   const assignmentsRef = useRef(houseAssignments)
 
   // Keep ref in sync so the generator always reads the latest assignments
