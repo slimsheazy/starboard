@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import StarBackground from "@/components/star-background"
 import AstrologyWheel from "@/components/astrology-wheel"
 import UserInputForm from "@/components/user-input-form"
-import CharmBoard from "@/components/charm-board"
+import CharmBoard, { type HouseAssignment } from "@/components/charm-board"
 import ReadingSynopsis from "@/components/reading-synopsis"
 import SavedReadings from "@/components/saved-readings"
 import BottomNav from "@/components/bottom-nav"
@@ -30,6 +30,7 @@ export default function Home() {
   const [showSavedReadings, setShowSavedReadings] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState<boolean | null>(null)
   const [showSpinWheel, setShowSpinWheel] = useState(false)
+  const [houseAssignments, setHouseAssignments] = useState<HouseAssignment[]>([])
 
   // Load saved readings from localStorage on initial render
   useEffect(() => {
@@ -110,6 +111,7 @@ export default function Home() {
     console.log("🔄 Resetting reading...")
     triggerWhisper()
     setSelectedCharms([])
+    setHouseAssignments([])
     setIsReading(false)
     setHasShaken(false)
     setQuestion("")
@@ -253,7 +255,7 @@ export default function Home() {
           >
             <div className="relative w-full max-w-md aspect-square mx-auto">
               <AstrologyWheel houses={contextualHouses} />
-              <CharmBoard charms={selectedCharms} houses={contextualHouses} />
+              <CharmBoard charms={selectedCharms} houses={contextualHouses} onHouseAssignments={setHouseAssignments} />
             </div>
 
             <p className="text-xs text-white/50 mt-2 text-center">tap the charms for insight</p>
@@ -264,7 +266,7 @@ export default function Home() {
               </div>
             )}
 
-            <ReadingSynopsis charms={selectedCharms} houses={contextualHouses} question={question} />
+            <ReadingSynopsis charms={selectedCharms} houses={contextualHouses} question={question} houseAssignments={houseAssignments} />
 
             {/* Action buttons with proper spacing from bottom nav */}
             <div className="flex flex-wrap gap-4 mt-8 justify-center px-4 pb-4">
