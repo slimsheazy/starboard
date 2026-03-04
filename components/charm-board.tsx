@@ -8,9 +8,15 @@ import { CharmTooltip } from "./charm-tooltip"
 import { getCharmIcon } from "@/lib/charm-icons"
 import { triggerGlitch } from "./sound-effects"
 
+export interface HouseAssignment {
+  houseIndex: number
+  charmIndices: number[]
+}
+
 interface CharmBoardProps {
   charms: Charm[]
   houses: House[]
+  onHouseAssignments?: (assignments: HouseAssignment[]) => void
 }
 
 interface CharmPosition {
@@ -36,7 +42,7 @@ const getCosmicColor = (charmName: string): string => {
   }
 }
 
-export default function CharmBoard({ charms, houses }: CharmBoardProps) {
+export default function CharmBoard({ charms, houses, onHouseAssignments }: CharmBoardProps) {
   const [positions, setPositions] = useState<CharmPosition[]>([])
   const [selectedCharm, setSelectedCharm] = useState<{ charm: Charm; position: CharmPosition } | null>(null)
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
@@ -49,6 +55,11 @@ export default function CharmBoard({ charms, houses }: CharmBoardProps) {
     // Randomly distribute 12 charms across 12 houses (0-3 charms per house)
     const houseAssignments = distributeCharmsToHouses(charms, houses)
     console.log("🏠 House assignments:", houseAssignments)
+
+    // Notify parent of assignments so synopsis can use them
+    if (onHouseAssignments) {
+      onHouseAssignments(houseAssignments)
+    }
 
     // Calculate positions for each charm based on their house assignment
     const newPositions = charms
